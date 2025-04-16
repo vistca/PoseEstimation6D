@@ -175,3 +175,8 @@ cython_debug/
 
 wandb_api_key.txt
 .store
+
+
+
+wandb/
+

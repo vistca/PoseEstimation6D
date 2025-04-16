@@ -3,8 +3,9 @@ import random
 
 import wandb
 
+
 class Wandb():
-    def __init__(self):
+    def __init__(self, name_of_round):
 
         try:
             file = open("wandb_api_key.txt").readlines()
@@ -13,20 +14,30 @@ class Wandb():
         except:
             api_key = input("Give me your key for wandb :) \n - ")
 
-        print(api_key)
+        print(api_key[:5] + "."*(len(api_key)-5))
         wandb.login(key=api_key)
-        # # Start a new wandb run to track this script.
-        # self.run = wandb.init(
-        #     # Set the wandb entity where your project will be logged (generally your team name).
-        #     entity="fantastic_4_0",
-        #     # Set the wandb project where this run will be logged.
-        #     project="PoseEstimation6D",
+        # Start a new wandb run to track this script.
+        self.run = wandb.init(
+            # Set the wandb entity where your project will be logged (generally your team name).
+            entity="fantastic_4_0",
+            # Set the wandb project where this run will be logged.
+            project="PoseEstimation6D",
 
-        #     # Track hyperparameters and run metadata.
-        #     config={
-        #        "model": "setup_test",
-        #     },
-        # )
+            name = name_of_round,
 
-    def log_metric(self, log_name, log_value):
-        self.run.log({log_name, log_value})
+            # Track hyperparameters and run metadata.
+            config={
+               "model": "setup_test",
+            },
+
+            
+        )
+
+
+    def log_metric(self, log_dict):
+        self.run.log(log_dict)
+
+
+
+        
+     
