@@ -1,12 +1,9 @@
 import random
-#from config import config
 
 import wandb
 
-
-class Wandb():
-    def __init__(self, name_of_round):
-
+class WandbSetup():
+    def __init__(self, name_of_round, parsed_args):
         try:
             file = open("wandb_api_key.txt").readlines()
             for lines in file:
@@ -14,7 +11,6 @@ class Wandb():
         except:
             api_key = input("Give me your key for wandb :) \n - ")
 
-        print(api_key[:5] + "."*(len(api_key)-5))
         wandb.login(key=api_key)
         # Start a new wandb run to track this script.
         self.run = wandb.init(
@@ -24,13 +20,14 @@ class Wandb():
             project="PoseEstimation6D",
 
             name = name_of_round,
-
             # Track hyperparameters and run metadata.
             config={
-               "model": "setup_test",
-            },
-
-            
+               "backbone": parsed_args.backbone,
+               "head": parsed_args.head,
+               "learning rate" : parsed_args.lr,
+               "epochs" : parsed_args.epochs,
+               "batch size" : parsed_args.bs
+            },  
         )
 
 
