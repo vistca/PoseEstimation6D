@@ -1,8 +1,8 @@
 
 # Model conf
-backbone : "setup_test"
-head : "custom"
-nr_output_channels: 16
+backbone : "test_backbone"
+head : "test_head"
+output_channels: 16
 input_channels : 4
 input_folder : "../Linemod"
 

@@ -181,4 +181,4 @@ wandb_api_key.txt
 wandb/
 
 .conda
-6dposeVenv/
+6dvenv/

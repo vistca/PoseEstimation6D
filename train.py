@@ -1,34 +1,42 @@
+import tqdm
 
-def train(model, optimizer, dataloader, loss_fn ,wandb_instance):
-    model.train()
-    running_loss = 0.0
-    correct = 0
-    total = 0
+class Trainer():
 
-    nr_batches = 0
-    for batch_idx, (inputs, targets) in enumerate(dataloader):
-        inputs, targets = inputs.cuda(), targets.cuda()
+    def __init__(self, model, optimizer, wandb_instance):
+        self.model = model
+        self.optimizer = optimizer
+        self.wandb_instance = wandb_instance
 
-        pred = model(inputs)
-        loss = loss_fn(pred, targets)
+    def train(self, dataloader, loss_fn):
+        self.model.train()
+        running_loss = 0.0
+        correct = 0
+        total = 0
 
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        nr_batches = 0
+        for (inputs, targets) in tqdm(dataloader):
+            inputs, targets = inputs.cuda(), targets.cuda()
 
-        running_loss += loss.item()
-        _, predicted = pred.max(1)
-        total += targets.size(0)
-        correct += predicted.eq(targets).sum().item()
+            pred = self.model(inputs)
+            loss = loss_fn(pred, targets)
 
-        nr_batches += 1
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
+
+            running_loss += loss.item()
+            _, predicted = pred.max(1)
+            total += targets.size(0)
+            correct += predicted.eq(targets).sum().item()
+
+            nr_batches += 1
 
 
 
-    train_loss = running_loss / nr_batches #len(dataloader)
-    train_accuracy = 100. * correct / total
-    print(f'Loss: {train_loss:.6f} Acc: {train_accuracy:.2f}%')
+        train_loss = running_loss / nr_batches #len(dataloader)
+        train_accuracy = 100. * correct / total
+        print(f'Loss: {train_loss:.6f} Acc: {train_accuracy:.2f}%')
 
-    wandb_instance.log_metric({"training_loss" : train_loss, "training_accuracy" : train_accuracy})
+        self.wandb_instance.log_metric({"training_loss" : train_loss, "training_accuracy" : train_accuracy})
 
 

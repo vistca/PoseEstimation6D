@@ -11,6 +11,8 @@ class WandbSetup():
         except:
             api_key = input("Give me your key for wandb :) \n - ")
 
+        
+
         wandb.login(key=api_key)
         # Start a new wandb run to track this script.
         self.run = wandb.init(
