@@ -1,5 +1,5 @@
-from backbones.test_backbone import TestBackbone
-from heads.test_head import TestHead
+from models.backbones.test_backbone import TestBackbone
+from models.heads.test_head import TestHead
 import yaml
 import torch.nn as nn
 
