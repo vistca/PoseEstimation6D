@@ -7,7 +7,13 @@ from train import Trainer
 from utils.optimizer_loader import OptimLoader
 from data.custom_dataset import CustomDataset
 from torch.utils.data import DataLoader
+import subprocess
+import os
 
+def download_data(google_folder, dataset_root):
+    os.mkdir(f"./{dataset_root}/")
+    subprocess.run(["gdown", "--folder", google_folder, "-O", f"PoseEstimation6D/{dataset_root}/"],
+        check=True)
 
 def run_program(parser):
     parsed_args = parser.parse_args()
@@ -26,9 +32,13 @@ def run_program(parser):
 
     optimizer = OptimLoader(parsed_args.optimizer, model.parameters(), parsed_args.lr)
     trainer = Trainer(model, optimizer, wandb_instance)
-
-    dataset_root = parsed_args.inputfolder
     
+    dataset_root = parsed_args.data
+    
+    if parser.ld != "":
+        download_data(parser.lr, dataset_root)
+
+
     train_dataset = CustomDataset(dataset_root, split="train")
     test_dataset = CustomDataset(dataset_root, split="test")
     train_loader = DataLoader(train_dataset, batch_size=parsed_args.bs, shuffle=True)
@@ -59,11 +69,21 @@ def add_runtime_args(parser):
     parser.add_argument('--head', type=str,
                     help='The name of the head', default=config_dict['head'])
     
-    parser.add_argument('--inputfolder', type=str,
-                    help='The input folder', default=config_dict['input_folder'])
+    parser.add_argument('--data', type=str,
+                    help='The input folder', default=config_dict['data_dir'])
     
-    parser.add_argument('--ld', type=bool,
-                    help='If data is available locally or should be downloaded', default=config_dict['load_data'])
+    parser.add_argument('--ld', type=str,
+                    help='Google drive download path', default="")
+    
+    try:
+        file = open("wandb_api_key.txt").readlines()
+        for lines in file:
+            api_key = lines
+    except:
+        api_key = ""
+
+    parser.add_argument('--wb', type=bool,
+                        help='If data is available locally or should be downloaded', default=api_key)
     
 
 if __name__ == "__main__":

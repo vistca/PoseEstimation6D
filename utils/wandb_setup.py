@@ -4,16 +4,11 @@ import wandb
 
 class WandbSetup():
     def __init__(self, name_of_round, parsed_args):
+
         try:
-            file = open("wandb_api_key.txt").readlines()
-            for lines in file:
-                api_key = lines
+            wandb.login(key=parsed_args.wb)
         except:
-            api_key = input("Give me your key for wandb :) \n - ")
-
-        
-
-        wandb.login(key=api_key)
+            raise("Login to wandb failed, check that the key was provided")
         # Start a new wandb run to track this script.
         self.run = wandb.init(
             # Set the wandb entity where your project will be logged (generally your team name).
