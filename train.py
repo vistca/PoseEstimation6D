@@ -31,8 +31,6 @@ class Trainer():
 
             nr_batches += 1
 
-
-
         train_loss = running_loss / nr_batches #len(dataloader)
         train_accuracy = 100. * correct / total
         print(f'Loss: {train_loss:.6f} Acc: {train_accuracy:.2f}%')

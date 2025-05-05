@@ -41,14 +41,15 @@ def run_program(parser):
     optimizer = OptimLoader(parsed_args.optimizer, model.parameters(), parsed_args.lr)
     trainer = Trainer(model, optimizer, wandb_instance)
     
-    dataset_root = parsed_args.data
     
     if parsed_args.ld != "":
-        download_data(parsed_args.ld, dataset_root)
+        download_data(parsed_args.ld, parsed_args.data)
 
-
+    dataset_root = parsed_args.data + "/Linemod_preprocessed"
     train_dataset = CustomDataset(dataset_root, split="train")
     test_dataset = CustomDataset(dataset_root, split="test")
+    
+    
     train_loader = DataLoader(train_dataset, batch_size=parsed_args.bs, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=parsed_args.bs, shuffle=False)
 
