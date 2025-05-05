@@ -9,11 +9,19 @@ from data.custom_dataset import CustomDataset
 from torch.utils.data import DataLoader
 import subprocess
 import os
+import shutil
+
 
 def download_data(google_folder, dataset_root):
-    os.mkdir(f"./{dataset_root}/")
-    subprocess.run(["gdown", "--folder", google_folder, "-O", f"PoseEstimation6D/{dataset_root}/"],
-        check=True)
+    output_path = dataset_root + "/"
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+        subprocess.run(["gdown", "--folder", str(google_folder), "-O", "tmp/"],
+            check=True)
+        subprocess.run(["unzip", "tmp/DenseFusion/Linemod_preprocessed.zip", "-d", output_path],
+        check=True 
+        )
+        shutil.rmtree('tmp')
 
 def run_program(parser):
     parsed_args = parser.parse_args()
@@ -23,7 +31,7 @@ def run_program(parser):
     model = ModelLoader(parsed_args.head, parsed_args.backbone)
 
     if torch.cuda.is_available():
-        device = torch.device("cuda:0")
+        device = torch.device("cuda")
         model.to(device)
         print("Model is running on gpu")
     else:
@@ -35,8 +43,8 @@ def run_program(parser):
     
     dataset_root = parsed_args.data
     
-    if parser.ld != "":
-        download_data(parser.lr, dataset_root)
+    if parsed_args.ld != "":
+        download_data(parsed_args.ld, dataset_root)
 
 
     train_dataset = CustomDataset(dataset_root, split="train")
@@ -74,16 +82,9 @@ def add_runtime_args(parser):
     
     parser.add_argument('--ld', type=str,
                     help='Google drive download path', default="")
-    
-    try:
-        file = open("wandb_api_key.txt").readlines()
-        for lines in file:
-            api_key = lines
-    except:
-        api_key = ""
 
     parser.add_argument('--wb', type=bool,
-                        help='If data is available locally or should be downloaded', default=api_key)
+                        help='If data is available locally or should be downloaded', default="")
     
 
 if __name__ == "__main__":

@@ -16,4 +16,4 @@ epochs : 10
 dropout : 0.05
 
 #Other configs
-data_dir : "datasets/linemod"
+data_dir : "datasets/"

@@ -4,7 +4,14 @@ import wandb
 
 class WandbSetup():
     def __init__(self, name_of_round, parsed_args):
-
+        
+        if parsed_args.wb != "":
+            try:
+                file = open("wandb_api_key.txt").readlines()
+                for lines in file:
+                    parsed_args.wb = lines
+            except:
+                raise("Login to wandb failed, check that the key was provided")
         try:
             wandb.login(key=parsed_args.wb)
         except:
