@@ -7,7 +7,7 @@ class WandbSetup():
     def __init__(self, name_of_round, parsed_args):
         os.environ["WANDB_SILENT"] = "true"
         
-        if parsed_args.wb != "":
+        if parsed_args.wb == "":
             try:
                 file = open("wandb_api_key.txt").readlines()
                 for lines in file:

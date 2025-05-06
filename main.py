@@ -87,7 +87,7 @@ def add_runtime_args(parser):
     parser.add_argument('--ld', type=str,
                     help='Google drive download path', default="")
 
-    parser.add_argument('--wb', type=bool,
+    parser.add_argument('--wb', type=str,
                         help='If data is available locally or should be downloaded', default="")
     
 
