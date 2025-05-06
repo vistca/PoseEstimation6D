@@ -10,5 +10,5 @@ class OptimLoader():
         elif optim_name == "AdamW":
             self.optim = optim.AdamW(params=model_params, lr=lr)
 
-    def return_optimizer(self):
+    def get_optimizer(self):
         return self.optim
