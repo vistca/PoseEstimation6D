@@ -6,4 +6,4 @@ plotly
 pyyaml
 tqdm
 wandb>=0.12.10
-google.colab
+ultralytics

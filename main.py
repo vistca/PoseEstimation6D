@@ -11,6 +11,7 @@ import subprocess
 import os
 import shutil
 from models.fasterRCNN import FasterRCNN
+from models.yolo import Yolo
 
 
 def download_data(google_folder, dataset_root):
@@ -35,7 +36,8 @@ def run_program(parser):
     if parsed_args.ld != "":
         download_data(parsed_args.ld, parsed_args.data)
 
-    modelloader = FasterRCNN()#ModelLoader(parsed_args.head, parsed_args.backbone)
+    #modelloader = FasterRCNN()#ModelLoader(parsed_args.head, parsed_args.backbone)
+    modelloader = Yolo()
     model = modelloader.get_model()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
@@ -87,7 +89,7 @@ def add_runtime_args(parser):
     parser.add_argument('--ld', type=str,
                     help='Google drive download path', default="")
 
-    parser.add_argument('--wb', type=bool,
+    parser.add_argument('--wb', type=str,
                         help='If data is available locally or should be downloaded', default="")
     
 

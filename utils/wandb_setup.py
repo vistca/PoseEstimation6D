@@ -7,17 +7,18 @@ class WandbSetup():
     def __init__(self, name_of_round, parsed_args):
         os.environ["WANDB_SILENT"] = "true"
         
-        if parsed_args.wb != "":
+        if parsed_args.wb == "":
             try:
                 file = open("wandb_api_key.txt").readlines()
                 for lines in file:
                     parsed_args.wb = lines
             except:
-                raise("Login to wandb failed, check that the key was provided")
-        try:
-            wandb.login(key=parsed_args.wb)
-        except:
-            raise("Login to wandb failed, check that the key was provided")
+                raise("Login to wandb failed, a key was not provided")
+        else:
+            try:
+                wandb.login(key=parsed_args.wb)
+            except:
+                raise("Login to wandb failed, provided key is invalid")
         # Start a new wandb run to track this script.
         self.run = wandb.init(
             # Set the wandb entity where your project will be logged (generally your team name).
