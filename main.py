@@ -11,6 +11,7 @@ import subprocess
 import os
 import shutil
 from models.fasterRCNN import FasterRCNN
+from models.yolo import Yolo
 
 
 def download_data(google_folder, dataset_root):
@@ -36,6 +37,7 @@ def run_program(parser):
         download_data(parsed_args.ld, parsed_args.data)
 
     modelloader = FasterRCNN()#ModelLoader(parsed_args.head, parsed_args.backbone)
+    #modelloader = Yolo()
     model = modelloader.get_model()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
