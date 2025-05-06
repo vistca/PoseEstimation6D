@@ -95,5 +95,3 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Optional app description')
     add_runtime_args(parser)
     run_program(parser)
-
-    #print("hello")

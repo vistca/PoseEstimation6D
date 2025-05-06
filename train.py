@@ -49,5 +49,4 @@ class Trainer():
             print(f"Epoch [{epoch+1}/{self.epochs}], Loss: {avg_loss:.4f}")
 
             self.wandb_instance.log_metric({"training_loss" : avg_loss})
-
-
+    
