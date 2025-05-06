@@ -7,32 +7,54 @@ from train import Trainer
 from utils.optimizer_loader import OptimLoader
 from data.custom_dataset import CustomDataset
 from torch.utils.data import DataLoader
+import subprocess
+import os
+import shutil
+from models.fasterRCNN import FasterRCNN
 
+
+def download_data(google_folder, dataset_root):
+    output_path = dataset_root + "/"
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+        subprocess.run(["gdown", "--folder", str(google_folder), "-O", "tmp/"],
+            check=True)
+        subprocess.run(["unzip", "tmp/DenseFusion/Linemod_preprocessed.zip", "-d", output_path],
+        check=True 
+        )
+        shutil.rmtree('tmp')
+
+def tmploss():
+     return 1
 
 def run_program(parser):
     parsed_args = parser.parse_args()
 
-    wandb_instance = WandbSetup("round5", parsed_args)
+    wandb_instance = WandbSetup("testround", parsed_args)
 
-    model = ModelLoader(parsed_args.head, parsed_args.backbone)
+    if parsed_args.ld != "":
+        download_data(parsed_args.ld, parsed_args.data)
 
-    if torch.cuda.is_available():
-        device = torch.device("cuda:0")
-        model.to(device)
-        print("Model is running on gpu")
-    else:
-        device = torch.device("cpu")
-        print("Model is running on cpu")
+    modelloader = FasterRCNN()#ModelLoader(parsed_args.head, parsed_args.backbone)
+    model = modelloader.get_model()
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = model.to(device)
+    model_params = [p for p in model.parameters() if p.requires_grad]
 
-    optimizer = OptimLoader(parsed_args.optimizer, model.parameters(), parsed_args.lr)
-    trainer = Trainer(model, optimizer, wandb_instance)
+    optimloader = OptimLoader(parsed_args.optimizer, model_params, parsed_args.lr)
+    optimizer = optimloader.get_optimizer()
 
-    dataset_root = parsed_args.inputfolder
-    
+    trainer = Trainer(model, optimizer, wandb_instance, 1)
+
+    dataset_root = parsed_args.data + "/Linemod_preprocessed"
     train_dataset = CustomDataset(dataset_root, split="train")
     test_dataset = CustomDataset(dataset_root, split="test")
+    
     train_loader = DataLoader(train_dataset, batch_size=parsed_args.bs, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=parsed_args.bs, shuffle=False)
+
+    print("done with loading")
+    trainer.train(train_loader, device)
 
 def add_runtime_args(parser):
     with open('config/config.yaml') as f:
@@ -59,15 +81,17 @@ def add_runtime_args(parser):
     parser.add_argument('--head', type=str,
                     help='The name of the head', default=config_dict['head'])
     
-    parser.add_argument('--inputfolder', type=str,
-                    help='The input folder', default=config_dict['input_folder'])
+    parser.add_argument('--data', type=str,
+                    help='The input folder', default=config_dict['data_dir'])
     
-    parser.add_argument('--ld', type=bool,
-                    help='If data is available locally or should be downloaded', default=config_dict['load_data'])
+    parser.add_argument('--ld', type=str,
+                    help='Google drive download path', default="")
+
+    parser.add_argument('--wb', type=bool,
+                        help='If data is available locally or should be downloaded', default="")
     
 
 if __name__ == "__main__":
-    print("hej")
-    # parser = argparse.ArgumentParser(description='Optional app description')
-    # add_runtime_args(parser)
-    # run_program(parser)
+    parser = argparse.ArgumentParser(description='Optional app description')
+    add_runtime_args(parser)
+    run_program(parser)

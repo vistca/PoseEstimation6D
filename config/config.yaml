@@ -4,7 +4,6 @@ backbone : "test_backbone"
 head : "test_head"
 output_channels: 16
 input_channels : 4
-input_folder : "../Linemod"
 
 # Optimizer
 optimizer : "Adam"
@@ -17,5 +16,4 @@ epochs : 10
 dropout : 0.05
 
 #Other configs
-load_data : False
-data_folder : "dataset/"
+data_dir : "datasets/"

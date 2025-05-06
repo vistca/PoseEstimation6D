@@ -1,51 +1,52 @@
-from test import test
-import torch
-import tqdm
+from tqdm import tqdm
 
 class Trainer():
 
-    def __init__(self, model, optimizer, wandb_instance):
+    def __init__(self, model, optimizer, wandb_instance, epochs):
         self.model = model
         self.optimizer = optimizer
         self.wandb_instance = wandb_instance
+        self.epochs = epochs
 
-    def train(self, train_dataloader, val_dataloader, loss_fn):
-        self.model.train()
-        running_loss = 0.0
-        correct = 0
-        total = 0
-
-        nr_batches = 0
-        for (inputs, targets) in tqdm(train_dataloader):
-            inputs, targets = inputs.cuda(), targets.cuda()
-
-            pred = self.model(inputs)
-            loss = loss_fn(pred, targets)
-
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
-
-            running_loss += loss.item()
-            _, predicted = pred.max(1)
-            total += targets.size(0)
-            correct += predicted.eq(targets).sum().item()
-
-            nr_batches += 1
-
+    def train(self, dataloader, device):
         
-        train_loss = running_loss / nr_batches #len(dataloader)
-        train_accuracy = 100. * correct / total
-        
-        print(f'Loss: {train_loss:.6f} Acc: {train_accuracy:.2f}%')
+        train_losses = []
 
-        val_accuracy, val_loss = test(self.model, val_dataloader, loss_fn)
+        for epoch in range(self.epochs):
 
-        print(f'Validation Loss: {val_loss:.6f} Acc: {val_accuracy:.2f}%')
+            self.model.train()
+            total_loss = 0.0
+            nr_batches = 0
 
-        self.wandb_instance.log_metric({"training_loss" : train_loss, 
-                                        "training_accuracy" : train_accuracy,
-                                        "validation_loss" : val_loss,
-                                        "validation_accuracy" : val_accuracy})
+            for batch in tqdm(dataloader):
+                images = batch["rgb"].to(device)
+                targets = []
 
+                # We must be able to improve/remove this loop
+                for i in range(images.shape[0]):
+                    target = {}
+                    target["boxes"] = batch["bbox"][i].to(device).unsqueeze(0)  # Add batch dimension
+                    target["labels"] = batch["obj_id"][i].to(device).long().unsqueeze(0)  # Add batch dimension
+                    targets.append(target)
+                
+
+                loss_dict = self.model(images, targets)
+                loss = sum(loss for loss in loss_dict.values())
+
+                self.optimizer.zero_grad()
+                loss.backward()
+                self.optimizer.step()
+
+                # Track loss
+                total_loss += loss.item()
+
+                nr_batches += 1
+                break
+
+            avg_loss = total_loss / len(dataloader)
+            train_losses.append(avg_loss)
+
+            print(f"Epoch [{epoch+1}/{self.epochs}], Loss: {avg_loss:.4f}")
+
+            self.wandb_instance.log_metric({"training_loss" : avg_loss})
     

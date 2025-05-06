@@ -147,6 +147,7 @@ class CustomDataset(Dataset):
         point_cloud = torch.tensor(np.asarray(point_cloud.points), dtype=torch.float32)
         translation, rotation, bbox, obj_id = self.load_6d_pose(folder_id, sample_id)
 
+        # TODO: Look at tensor creation "sourceTensor.clone().detach().requires_grad_(True)" instead of torch.tensor()
         return {
             "rgb": img,
             "depth": torch.tensor(depth, dtype=torch.float32),
