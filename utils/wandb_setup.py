@@ -1,9 +1,11 @@
-import random
+
 
 import wandb
+import os
 
 class WandbSetup():
     def __init__(self, name_of_round, parsed_args):
+        os.environ["WANDB_SILENT"] = "true"
         
         if parsed_args.wb != "":
             try:
@@ -22,7 +24,6 @@ class WandbSetup():
             entity="fantastic_4_0",
             # Set the wandb project where this run will be logged.
             project="PoseEstimation6D",
-
             name = name_of_round,
             # Track hyperparameters and run metadata.
             config={
@@ -33,6 +34,7 @@ class WandbSetup():
                "batch size" : parsed_args.bs
             },  
         )
+        print("Login complete")
 
 
     def log_metric(self, log_dict):
