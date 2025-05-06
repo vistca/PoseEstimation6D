@@ -36,8 +36,8 @@ def run_program(parser):
     if parsed_args.ld != "":
         download_data(parsed_args.ld, parsed_args.data)
 
-    #modelloader = FasterRCNN()#ModelLoader(parsed_args.head, parsed_args.backbone)
-    modelloader = Yolo()
+    modelloader = FasterRCNN()#ModelLoader(parsed_args.head, parsed_args.backbone)
+    #modelloader = Yolo()
     model = modelloader.get_model()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
