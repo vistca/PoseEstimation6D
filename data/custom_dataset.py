@@ -150,7 +150,7 @@ class CustomDataset(Dataset):
         # TODO: Look at tensor creation "sourceTensor.clone().detach().requires_grad_(True)" instead of torch.tensor()
         return {
             "rgb": img,
-            "depth": torch.tensor(depth, dtype=torch.float32),
+            "depth": depth.clone().detach(), #torch.tensor(depth, dtype=torch.float32),
             "point_cloud": point_cloud,
             "camera_intrinsics": camera_intrinsics[0]['cam_K'],
             "objects_info": objects_info,

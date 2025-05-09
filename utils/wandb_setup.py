@@ -41,6 +41,49 @@ class WandbSetup():
     def log_metric(self, log_dict):
         self.run.log(log_dict)
 
+    def log_hist(self, key, value):
+        self.run.log({key : wandb.Histogram(value)})
+
+    def log_line_plot(self, main_key, epoch, dict_content):
+        keys = []
+        values = []
+
+        
+        table = wandb.Table(columns=["values"])
+
+        for key, value in dict_content.items():
+           table.add_data(value)
+           keys.append(key)
+           values.append(value)
+
+
+        # self.run.log({
+        #         main_key : wandb.plot.line( 
+        #         table=table,
+        #         x="epochs",
+        #         y="time"
+        #     )
+        # })
+
+        self.run.log({
+                main_key : wandb.plot.line_series( 
+                xs=[epoch],
+                ys=values,
+                keys=keys,
+                title=main_key,
+                xname="Epochs"
+            )
+        })
+
+
+        # table: wandb.Table,
+        # x: str,
+        # y: str,
+        # stroke: str | None = None,
+        # title: str = "",
+        # split_table: bool = False,
+        
+
 
 
         

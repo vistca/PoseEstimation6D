@@ -46,14 +46,16 @@ def run_program(parser):
     optimloader = OptimLoader(parsed_args.optimizer, model_params, parsed_args.lr)
     optimizer = optimloader.get_optimizer()
 
-    trainer = Trainer(model, optimizer, wandb_instance, 1)
+    trainer = Trainer(model, optimizer, wandb_instance, parsed_args.epochs)
 
     dataset_root = parsed_args.data + "/Linemod_preprocessed"
     train_dataset = CustomDataset(dataset_root, split="train")
     test_dataset = CustomDataset(dataset_root, split="test")
     
-    train_loader = DataLoader(train_dataset, batch_size=parsed_args.bs, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=parsed_args.bs, shuffle=False)
+    #Look at pin_memory
+    num_workers = min(parsed_args.bs, 8)
+    train_loader = DataLoader(train_dataset, batch_size=parsed_args.bs, shuffle=True, num_workers=num_workers, pin_memory=True)
+    test_loader = DataLoader(test_dataset, batch_size=parsed_args.bs, shuffle=False, num_workers=num_workers, pin_memory=True)
 
     print("done with loading")
     trainer.train(train_loader, device)
