@@ -12,6 +12,7 @@ import os
 import shutil
 from models.fasterRCNN import FasterRCNN
 from models.yolo import Yolo
+from timm.data.loader import MultiEpochsDataLoader, fast_collate
 
 
 def download_data(google_folder, dataset_root):
@@ -54,8 +55,11 @@ def run_program(parser):
     
     #Look at pin_memory
     num_workers = min(parsed_args.bs, 8)
-    train_loader = DataLoader(train_dataset, batch_size=parsed_args.bs, shuffle=True, num_workers=num_workers, pin_memory=True)
-    test_loader = DataLoader(test_dataset, batch_size=parsed_args.bs, shuffle=False, num_workers=num_workers, pin_memory=True)
+    train_loader = MultiEpochsDataLoader(train_dataset, batch_size=parsed_args.bs, shuffle=True, num_workers=num_workers, pin_memory=True, collate_fn=fast_collate)
+    test_loader = MultiEpochsDataLoader(train_dataset, batch_size=parsed_args.bs, shuffle=True, num_workers=num_workers, pin_memory=True, collate_fn=fast_collate)
+
+    train_loader = DataLoader(train_dataset, batch_size=parsed_args.bs, shuffle=True, num_workers=num_workers, pin_memory=True, collate_fn=fast_collate)
+    test_loader = DataLoader(test_dataset, batch_size=parsed_args.bs, shuffle=False, num_workers=num_workers, pin_memory=True, collate_fn=fast_collate)
 
     print("done with loading")
     trainer.train(train_loader, device)
