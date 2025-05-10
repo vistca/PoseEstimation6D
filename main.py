@@ -1,30 +1,16 @@
 from utils.wandb_setup import WandbSetup
 import argparse
 import yaml
-from models.model_loader import ModelLoader
 import torch
 from train import Trainer
 from utils.optimizer_loader import OptimLoader
 from data.custom_dataset import CustomDataset
 from torch.utils.data import DataLoader
-import subprocess
-import os
-import shutil
 from models.fasterRCNN import FasterRCNN
 from models.yolo import Yolo
 from timm.data.loader import MultiEpochsDataLoader, fast_collate
-
-
-def download_data(google_folder, dataset_root):
-    output_path = dataset_root + "/"
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
-        subprocess.run(["gdown", "--folder", str(google_folder), "-O", "tmp/"],
-            check=True)
-        subprocess.run(["unzip", "tmp/DenseFusion/Linemod_preprocessed.zip", "-d", output_path],
-        check=True 
-        )
-        shutil.rmtree('tmp')
+from prep_data import download_data
+from data.faster_dataset import FasterDataset
 
 def tmploss():
      return 1
@@ -50,16 +36,19 @@ def run_program(parser):
     trainer = Trainer(model, optimizer, wandb_instance, parsed_args.epochs)
 
     dataset_root = parsed_args.data + "/Linemod_preprocessed"
-    train_dataset = CustomDataset(dataset_root, split="train")
-    test_dataset = CustomDataset(dataset_root, split="test")
+    #train_dataset = CustomDataset(dataset_root, split="train")
+    #test_dataset = CustomDataset(dataset_root, split="test")
     
+    train_dataset = FasterDataset(dataset_root, split="train")
+    test_dataset = FasterDataset(dataset_root, split="test")
+
     #Look at pin_memory
     num_workers = min(parsed_args.bs, 8)
-    train_loader = MultiEpochsDataLoader(train_dataset, batch_size=parsed_args.bs, shuffle=True, num_workers=num_workers, pin_memory=True, collate_fn=fast_collate)
-    test_loader = MultiEpochsDataLoader(train_dataset, batch_size=parsed_args.bs, shuffle=True, num_workers=num_workers, pin_memory=True, collate_fn=fast_collate)
+    train_loader = MultiEpochsDataLoader(train_dataset, batch_size=parsed_args.bs, shuffle=True, num_workers=num_workers)
+    test_loader = MultiEpochsDataLoader(train_dataset, batch_size=parsed_args.bs, shuffle=True, num_workers=num_workers)
 
-    train_loader = DataLoader(train_dataset, batch_size=parsed_args.bs, shuffle=True, num_workers=num_workers, pin_memory=True, collate_fn=fast_collate)
-    test_loader = DataLoader(test_dataset, batch_size=parsed_args.bs, shuffle=False, num_workers=num_workers, pin_memory=True, collate_fn=fast_collate)
+    #train_loader = DataLoader(train_dataset, batch_size=parsed_args.bs, shuffle=True, num_workers=num_workers, pin_memory=True, collate_fn=fast_collate)
+    #test_loader = DataLoader(test_dataset, batch_size=parsed_args.bs, shuffle=False, num_workers=num_workers, pin_memory=True, collate_fn=fast_collate)
 
     print("done with loading")
     trainer.train(train_loader, device)
@@ -97,6 +86,9 @@ def add_runtime_args(parser):
 
     parser.add_argument('--wb', type=str,
                         help='If data is available locally or should be downloaded', default="")
+    
+    parser.add_argument('--log', type=bool, action=argparse.BooleanOptionalAction,
+                        help='If run should be logged using wandb', default=True)
     
 
 if __name__ == "__main__":

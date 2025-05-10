@@ -25,10 +25,13 @@ class Trainer():
             loss_box_reg = 0
             loss_objectness = 0
             loss_rpn_box_reg = 0
-            timings = {"load" : [], "fit/loss" : [], "backprop" : []}
+            timings = {"DL update iter" : [], "load" : [], "fit/loss" : [], "backprop" : []}
 
             progress_bar = tqdm(dataloader, desc="Training", ncols=100)
+            start = time.perf_counter()
             for batch_idx, batch in enumerate(progress_bar):
+                end = time.perf_counter()
+                timings["DL update iter"].append(end - start)
                 
                 start = time.perf_counter()
                 images = batch["rgb"].to(device)
@@ -100,6 +103,7 @@ class Trainer():
             
 
             self.wandb_instance.log_metric({
+                                            "DL update iter" : statistics.mean(timings["DL update iter"]),
                                             "Time load_data" : statistics.mean(timings["load"]),
                                             "Time fit/calc_loss" : statistics.mean(timings["fit/loss"]),
                                             "Time backprop" : statistics.mean(timings["backprop"]),
