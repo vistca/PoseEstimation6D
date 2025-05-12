@@ -2,18 +2,16 @@ import os
 import yaml
 import numpy as np
 import torch
-import open3d as o3d
 from torch.utils.data import Dataset
 from PIL import Image
 import torchvision.transforms as transforms
-import matplotlib.pyplot as plt
-import open3d as o3d
 import numpy as np
-import plotly.graph_objects as go
 from sklearn.model_selection import train_test_split
-from torch.utils.data import DataLoader
+import json
+import open3d as o3d
+from tqdm import tqdm
 
-class CustomDataset(Dataset):
+class FasterDataset(Dataset):
     def __init__(self, dataset_root, split='train', train_ratio=0.8, seed=42):
         """
         Args:
@@ -47,6 +45,48 @@ class CustomDataset(Dataset):
             transforms.ToTensor(),
         ])
 
+        self.pose_data = {}
+        self.cam_data = {}
+
+        """
+            This loads the data into memory instead of having to access it each time 
+            items are fetched from __getitem__
+        """
+        print(f"Initializing {self.split} dataset")
+        dirs = os.listdir(self.dataset_root + '/data')
+        for dir in tqdm(dirs):
+            if os.path.isdir(self.dataset_root + "/data/" + dir):
+               
+                
+                pose_file = os.path.join(self.dataset_root, 'data', dir, "gt.json")
+                cam_file = os.path.join(self.dataset_root, 'data', dir, "info.json")
+                objects_info_path = os.path.join(self.dataset_root, 'models', f"models_info.yml")
+
+                # Load the ground truth poses from the gt.yml file
+                with open(pose_file, 'r') as f:
+                    self.pose_data[dir] = json.load(f)
+
+                with open(cam_file, 'r') as f:
+                    self.cam_data[dir] = json.load(f)
+
+                with open(objects_info_path, 'r') as f:
+                    self.objects_info = yaml.load(f, Loader=yaml.FullLoader)
+        
+    """
+    def load_config(self, folder_id):
+        Load YAML configuration files for camera intrinsics and object info for a specific folder.
+        camera_intrinsics_path = os.path.join(self.dataset_root, 'data', f"{folder_id:02d}", 'info.yml')
+        objects_info_path = os.path.join(self.dataset_root, 'models', f"models_info.yml")
+
+        with open(camera_intrinsics_path, 'r') as f:
+            camera_intrinsics = yaml.load(f, Loader=yaml.FullLoader)
+
+        with open(objects_info_path, 'r') as f:
+            objects_info = yaml.load(f, Loader=yaml.FullLoader)
+
+        return camera_intrinsics, objects_info
+    """
+
     def get_all_samples(self):
         """Retrieve the list of all available sample indices from all folders."""
         samples = []
@@ -58,32 +98,19 @@ class CustomDataset(Dataset):
                 samples.extend([(folder_id, sid) for sid in sample_ids])  # Store (folder_id, sample_id)
         return samples
 
-    def load_config(self, folder_id):
-        """Load YAML configuration files for camera intrinsics and object info for a specific folder."""
-        camera_intrinsics_path = os.path.join(self.dataset_root, 'data', f"{folder_id:02d}", 'info.yml')
-        objects_info_path = os.path.join(self.dataset_root, 'models', f"models_info.yml")
-
-        with open(camera_intrinsics_path, 'r') as f:
-            camera_intrinsics = yaml.load(f, Loader=yaml.FullLoader)
-
-        with open(objects_info_path, 'r') as f:
-            objects_info = yaml.load(f, Loader=yaml.FullLoader)
-
-        return camera_intrinsics, objects_info
-
     def load_image(self, img_path):
         """Load an RGB image and convert to tensor."""
         img = Image.open(img_path).convert("RGB")
         return self.transform(img)
-
+    
     def load_depth(self, depth_path):
         """Load a depth image and convert to tensor."""
         depth = np.array(Image.open(depth_path))
         return torch.tensor(depth, dtype=torch.float32)
-
+    
     def load_point_cloud(self, depth, intrinsics):
         """Convert depth image to point cloud using Open3D."""
-        intrinsics = intrinsics[0]['cam_K']
+        intrinsics = intrinsics['0']['cam_K']
         h, w = depth.shape
         fx, fy, cx, cy = intrinsics[0], intrinsics[4], intrinsics[2], intrinsics[5]
 
@@ -99,17 +126,37 @@ class CustomDataset(Dataset):
 
         return point_cloud
 
-    def load_6d_pose(self, folder_id, sample_id):
-        """Load the 6D pose (translation and rotation) for the object in this sample."""
-        pose_file = os.path.join(self.dataset_root, 'data', f"{folder_id:02d}", "gt.yml")
 
-        # Load the ground truth poses from the gt.yml file
-        with open(pose_file, 'r') as f:
-            pose_data = yaml.load(f, Loader=yaml.FullLoader)
+    """def load_6d_pose(self, folder_id, sample_id):
+        pose_data = self.pose_data[folder_id]
 
         # The pose data is a dictionary where each key corresponds to a frame with pose info
         # We assume sample_id corresponds to the key in pose_data
         if sample_id not in pose_data:
+            raise KeyError(f"Sample ID {sample_id} not found in gt.yml for folder {folder_id}.")
+
+        pose = pose_data[sample_id][0]  # There's only one pose per sample
+
+        # Extract translation and rotation
+        bbox = np.array(pose['obj_bb'], dtype=np.float32) #[4] ---> x_min, y_min, width, height
+        obj_id = np.array(pose['obj_id'], dtype=np.float32) #[1] ---> label
+
+        x_min, y_min, width, height = bbox
+        x_max = x_min + width
+        y_max = y_min + height
+        bbox = np.array([x_min, y_min, x_max, y_max], dtype=np.float32) #x_min, y_min, x_max, y_max
+
+        return bbox, obj_id
+        """
+    
+
+    def load_6d_pose(self, folder_id, sample_id):
+        pose_data = self.pose_data[folder_id]
+        sample_id = str(sample_id)
+        # The pose data is a dictionary where each key corresponds to a frame with pose info
+        # We assume sample_id corresponds to the key in pose_data
+        if sample_id not in pose_data.keys():
+            print(pose_data.keys())
             raise KeyError(f"Sample ID {sample_id} not found in gt.yml for folder {folder_id}.")
 
         pose = pose_data[sample_id][0]  # There's only one pose per sample
@@ -127,19 +174,42 @@ class CustomDataset(Dataset):
 
         return translation, rotation, bbox, obj_id
 
+
     def __len__(self):
         """Return the total number of samples in the selected split."""
         return len(self.samples)
 
+    """
+    def __getitem__(self, idx):
+        Load a dataset sample
+        folder_id, sample_id = self.samples[idx]
+        # Load the correct camera intrinsics and object info for this folder
+        folder_id = str(folder_id).zfill(2) 
+        img_path = os.path.join(self.dataset_root, 'data', folder_id, f"rgb/{sample_id:04d}.png")
+
+        img = self.load_image(img_path)
+        bbox, obj_id = self.load_6d_pose(folder_id, sample_id)
+
+        # TODO: Look at tensor creation "sourceTensor.clone().detach().requires_grad_(True)" instead of torch.tensor()
+        return {
+            "rgb": img,
+            "bbox": torch.tensor(bbox),
+            "obj_id": torch.tensor(obj_id)
+
+        }
+    """
+    
     def __getitem__(self, idx):
         """Load a dataset sample."""
-        folder_id, sample_id = self.samples[idx]
+        og_folder_id, sample_id = self.samples[idx]
+        folder_id = str(og_folder_id).zfill(2) 
 
         # Load the correct camera intrinsics and object info for this folder
-        camera_intrinsics, objects_info = self.load_config(folder_id)
+        camera_intrinsics = self.cam_data[folder_id]
+        #print(camera_intrinsics.keys())
 
-        img_path = os.path.join(self.dataset_root, 'data', f"{folder_id:02d}", f"rgb/{sample_id:04d}.png")
-        depth_path = os.path.join(self.dataset_root, 'data', f"{folder_id:02d}", f"depth/{sample_id:04d}.png")
+        img_path = os.path.join(self.dataset_root, 'data', folder_id, f"rgb/{sample_id:04d}.png")
+        depth_path = os.path.join(self.dataset_root, 'data', folder_id, f"depth/{sample_id:04d}.png")
 
         img = self.load_image(img_path)
         depth = self.load_depth(depth_path)
@@ -152,11 +222,14 @@ class CustomDataset(Dataset):
             "rgb": img,
             "depth": depth.clone().detach(), #torch.tensor(depth, dtype=torch.float32),
             "point_cloud": point_cloud,
-            "camera_intrinsics": camera_intrinsics[0]['cam_K'],
-            "objects_info": objects_info,
+            "camera_intrinsics": camera_intrinsics['0']['cam_K'],
+            "objects_info": self.objects_info[og_folder_id],
             "translation": torch.tensor(translation),
             "rotation": torch.tensor(rotation),
             "bbox": torch.tensor(bbox),
             "obj_id": torch.tensor(obj_id)
 
         }
+
+
+    

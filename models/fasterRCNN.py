@@ -12,7 +12,7 @@ class FasterRCNN():
         # to passing `weights=FasterRCNN_ResNet50_FPN_Weights.COCO_V1`. 
         # You can also use `weights=FasterRCNN_ResNet50_FPN_Weights.DEFAULT` to get the most up-to-date weights.
 
-        model = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=True)
+        model = torchvision.models.detection.fasterrcnn_resnet50_fpn(weights='DEFAULT')
         in_features = model.roi_heads.box_predictor.cls_score.in_features
         model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(in_features, config_dict['output_channels'])
 

@@ -7,3 +7,4 @@ pyyaml
 tqdm
 wandb>=0.12.10
 ultralytics
+timm
