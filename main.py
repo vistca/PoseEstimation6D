@@ -3,6 +3,7 @@ import argparse
 import yaml
 import torch
 from train import Trainer
+from test import Tester
 from utils.optimizer_loader import OptimLoader
 from data.custom_dataset import CustomDataset
 from torch.utils.data import DataLoader
@@ -34,13 +35,14 @@ def run_program(parser):
     optimizer = optimloader.get_optimizer()
 
     trainer = Trainer(model, optimizer, wandb_instance, parsed_args.epochs)
+    tester = Tester(model, wandb_instance)
 
     dataset_root = parsed_args.data + "/Linemod_preprocessed"
     #train_dataset = CustomDataset(dataset_root, split="train")
     #test_dataset = CustomDataset(dataset_root, split="test")
     
-    train_dataset = FasterDataset(dataset_root, split="train")
-    test_dataset = FasterDataset(dataset_root, split="test")
+    train_dataset = CustomDataset(dataset_root, split="train")
+    test_dataset = CustomDataset(dataset_root, split="test")
 
     #Look at pin_memory
     num_workers = min(parsed_args.bs, 8)
@@ -51,7 +53,11 @@ def run_program(parser):
     #test_loader = DataLoader(test_dataset, batch_size=parsed_args.bs, shuffle=False, num_workers=num_workers, pin_memory=True, collate_fn=fast_collate)
 
     print("done with loading")
-    trainer.train(train_loader, device)
+    #trainer.train(train_loader, device)
+
+    print("testing phase")
+    tester.validate(test_loader, device)
+    
 
 def add_runtime_args(parser):
     with open('config/config.yaml') as f:
