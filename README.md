@@ -12,7 +12,9 @@ Implement YOLO. Start training in the phase 2
 
 # How to run
 After cloaning the project run the following commands in the terminal:
+```
 pip install -r requirements.txt
+```
 
 For downloading the data
 python prep_data.py --gf {path to dataset.zip}
