@@ -19,10 +19,12 @@ python prep_data.py --gf {path to dataset.zip}
 python main.py --bs 32 --epochs 3 --no-log
 
 Current state of the project:
+
  - We have the Faster R-CNN but it has not trained it
  
 
 Wish list:
+
  - Being able to see the bounding boxes
 
  - Normalizeing the data, maybe?
@@ -38,7 +40,19 @@ Questions for the supervisor:
 
  - What does the rotation matrix and position represent, are they some relative orientation?
 
- - Variable size of inputs to the pose estimator
+ - Variable size of inputs to the pose estimator, pixel-wise embeddings
 
- - 
+ - What should be the acctual loss function, intersection over ... positional loss...
+
+ 
+Answers from the supervisor session:
+
+ - CNN, we can choose the model.
+
+ - It is the object's rotation and orientation relative to the camera
+
+ - Stretch and squeeze it to a fixed size (paddings could be used)
+
+ - We could just use the MSE but if we want to we could define a custom loss function
+
 
