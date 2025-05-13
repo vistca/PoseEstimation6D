@@ -23,7 +23,7 @@ def run_program(parser):
 
     if parsed_args.ld != "":
         download_data(parsed_args.ld, parsed_args.data)
-        yaml_to_json(args.f)
+        yaml_to_json(parsed_args.data + "Linemod_preprocessed/data/")
 
     modelloader = FasterRCNN()#ModelLoader(parsed_args.head, parsed_args.backbone)
     #modelloader = Yolo()
