@@ -17,3 +17,28 @@ pip install -r requirements.txt
 For downloading the data
 python prep_data.py --gf {path to dataset.zip}
 python main.py --bs 32 --epochs 3 --no-log
+
+Current state of the project:
+ - We have the Faster R-CNN but it has not trained it
+ 
+
+Wish list:
+ - Being able to see the bounding boxes
+
+ - Normalizeing the data, maybe?
+
+ - Step 3 can be worked on indepentedly of step 2
+
+ - Add validation set and retrieve validation accuracy
+
+
+Questions for the supervisor:
+
+ - What kind of model should be used for the first pose estimation step
+
+ - What does the rotation matrix and position represent, are they some relative orientation?
+
+ - Variable size of inputs to the pose estimator
+
+ - 
+
