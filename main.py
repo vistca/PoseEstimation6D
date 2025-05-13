@@ -41,13 +41,13 @@ def run_program(parser):
     #train_dataset = CustomDataset(dataset_root, split="train")
     #test_dataset = CustomDataset(dataset_root, split="test")
     
-    train_dataset = CustomDataset(dataset_root, split="train")
-    test_dataset = CustomDataset(dataset_root, split="test")
+    train_dataset = FasterDataset(dataset_root, split="train")
+    test_dataset = FasterDataset(dataset_root, split="test")
 
     #Look at pin_memory
     num_workers = min(parsed_args.bs, 8)
     train_loader = MultiEpochsDataLoader(train_dataset, batch_size=parsed_args.bs, shuffle=True, num_workers=num_workers)
-    test_loader = MultiEpochsDataLoader(train_dataset, batch_size=parsed_args.bs, shuffle=True, num_workers=num_workers)
+    test_loader = MultiEpochsDataLoader(test_dataset, batch_size=parsed_args.bs, shuffle=True, num_workers=num_workers)
 
     #train_loader = DataLoader(train_dataset, batch_size=parsed_args.bs, shuffle=True, num_workers=num_workers, pin_memory=True, collate_fn=fast_collate)
     #test_loader = DataLoader(test_dataset, batch_size=parsed_args.bs, shuffle=False, num_workers=num_workers, pin_memory=True, collate_fn=fast_collate)
