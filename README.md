@@ -28,6 +28,7 @@ python main.py --bs 32 --epochs 3 --no-log
 
 # With logging 
 python main.py --bs 32 --epochs 3 --wb {your key}
+```
 
 Current state of the project:
  - We have the Faster R-CNN but it has not trained it
