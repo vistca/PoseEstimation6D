@@ -9,3 +9,62 @@ Evaluation part. Implement mAP metric in phase 2
 
 Implement YOLO. Start training in the phase 2
 - Felix
+
+# How to run
+After cloaning the project run the following commands in the terminal:
+```
+pip install -r requirements.txt
+```
+
+For downloading the data and placing it in the correct path run
+```
+python prep_data.py --gf {path to dataset.zip}
+```
+
+Finally, start training and testhing through:
+```
+# Without logging 
+python main.py --bs 32 --epochs 3 --no-log
+
+# With logging 
+python main.py --bs 32 --epochs 3 --wb {your key}
+```
+
+Current state of the project:
+
+ - We have the Faster R-CNN but it has not trained it
+ 
+
+Wish list:
+
+ - Being able to see the bounding boxes
+
+ - Normalizeing the data, maybe?
+
+ - Step 3 can be worked on indepentedly of step 2
+
+ - Add validation set and retrieve validation accuracy
+
+
+Questions for the supervisor:
+
+ - What kind of model should be used for the first pose estimation step
+
+ - What does the rotation matrix and position represent, are they some relative orientation?
+
+ - Variable size of inputs to the pose estimator, pixel-wise embeddings
+
+ - What should be the acctual loss function, intersection over ... positional loss...
+
+ 
+Answers from the supervisor session:
+
+ - CNN, we can choose the model.
+
+ - It is the object's rotation and orientation relative to the camera
+
+ - Stretch and squeeze it to a fixed size (paddings could be used)
+
+ - We could just use the MSE but if we want to we could define a custom loss function
+
+
