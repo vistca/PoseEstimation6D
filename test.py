@@ -1,29 +1,94 @@
-
+from tqdm import tqdm
+import time
+import statistics
 import torch
+from torchmetrics.detection.mean_ap import MeanAveragePrecision
 
-def test(model, dataloader, loss_fn):
-        model.eval()
-        val_loss = 0
+class Tester:
 
-        correct, total = 0, 0
+    def __init__(self, model, wandb_instance):
+        self.model = model
+        self.wandb_instance = wandb_instance
+
+
+    def validate(self, dataloader, device):
+
+        self.model.eval()
+        val_loss = 0.0
+        loss_classifier = 0
+        loss_box_reg = 0
+        loss_objectness = 0
+        loss_rpn_box_reg = 0
+        metric = MeanAveragePrecision()
+
+        print("Starting validation...")
 
         with torch.no_grad():
-            nr_batches = 0
-            for batch_idx, (inputs, targets) in enumerate(dataloader):
-                inputs, targets = inputs.cuda(), targets.cuda()
+            for batch in tqdm(dataloader, desc="Validating", ncols=100):
+                images = batch["rgb"].to(device)
+                targets = []
+                print("moving to device")
+                for i in range(images.shape[0]):
+                    target = {
+                        "boxes": batch["bbox"][i].to(device).unsqueeze(0),
+                        "labels": batch["obj_id"][i].to(device).long().unsqueeze(0)
+                    }
+                    targets.append(target)
+                print("done moving to device")
 
-                pred = model(inputs)
-                loss = loss_fn(pred, targets)
+                # Forward pass
+
+                # weird quirk with eval() only returning predictions. Probably
+                # bad practice to elvaluate in train() mode.
+
+                self.model.train()
+                loss_dict = self.model(images, targets)
+                self.model.eval()
+
+                #print(type(loss_dict), loss_dict)  # Debugging output
+                loss = sum(loss for loss in loss_dict.values())
 
                 val_loss += loss.item()
-                _, predicted = pred.max(1) #outputs.max(1)
-                total += targets.size(0)
-                correct += predicted.eq(targets).sum().item()
+                loss_classifier += loss_dict["loss_classifier"].item()
+                loss_box_reg += loss_dict["loss_box_reg"].item()
+                loss_objectness += loss_dict["loss_objectness"].item()
+                loss_rpn_box_reg += loss_dict["loss_rpn_box_reg"].item()
 
-                nr_batches += 1
+                # Inference for mAP
+                outputs = self.model(images)
 
-        val_loss = val_loss / nr_batches #len(val_loader)
-        val_accuracy = 100. * correct / total
+                preds = []
+                gts = []
+                for pred, tgt in zip(outputs, targets):
+                    preds.append({
+                        "boxes": pred["boxes"].cpu(),
+                        "scores": pred["scores"].cpu(),
+                        "labels": pred["labels"].cpu()
+                    })
+                    gts.append({
+                        "boxes": tgt["boxes"].cpu(),
+                        "labels": tgt["labels"].cpu()
+                    })
 
-        return val_accuracy, val_loss
+                metric.update(preds, gts)
+
+        avg_loss = val_loss / len(dataloader)
+        val_metrics = metric.compute()
+
+        # Log to wandb
+        self.wandb_instance.log_metric({
+            "Validation total_loss": avg_loss,
+            "Validation class_loss": loss_classifier / len(dataloader),
+            "Validation box_loss": loss_box_reg / len(dataloader),
+            "Validation background_loss": loss_objectness / len(dataloader),
+            "Validation rpn_box_loss": loss_rpn_box_reg / len(dataloader),
+            "mAP@IoU=0.5:0.95": val_metrics["map"].item(),
+            "mAP@IoU=0.5": val_metrics["map_50"].item(),
+            "mAP@IoU=0.75": val_metrics["map_75"].item(),
+            "AR@max=1": val_metrics["mar_1"].item(),
+            "AR@max=10": val_metrics["mar_10"].item(),
+            "AR@max=100": val_metrics["mar_100"].item(),
+        })
+
+        print(f"Validation Loss: {avg_loss:.4f}, mAP@0.5:0.95 = {val_metrics['map'].item():.4f}")
 

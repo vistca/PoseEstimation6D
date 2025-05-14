@@ -72,21 +72,6 @@ class FasterDataset(Dataset):
                 with open(objects_info_path, 'r') as f:
                     self.objects_info = yaml.load(f, Loader=yaml.FullLoader)
         
-    """
-    def load_config(self, folder_id):
-        Load YAML configuration files for camera intrinsics and object info for a specific folder.
-        camera_intrinsics_path = os.path.join(self.dataset_root, 'data', f"{folder_id:02d}", 'info.yml')
-        objects_info_path = os.path.join(self.dataset_root, 'models', f"models_info.yml")
-
-        with open(camera_intrinsics_path, 'r') as f:
-            camera_intrinsics = yaml.load(f, Loader=yaml.FullLoader)
-
-        with open(objects_info_path, 'r') as f:
-            objects_info = yaml.load(f, Loader=yaml.FullLoader)
-
-        return camera_intrinsics, objects_info
-    """
-
     def get_all_samples(self):
         """Retrieve the list of all available sample indices from all folders."""
         samples = []
@@ -125,29 +110,6 @@ class FasterDataset(Dataset):
         point_cloud.points = o3d.utility.Vector3dVector(points)
 
         return point_cloud
-
-
-    """def load_6d_pose(self, folder_id, sample_id):
-        pose_data = self.pose_data[folder_id]
-
-        # The pose data is a dictionary where each key corresponds to a frame with pose info
-        # We assume sample_id corresponds to the key in pose_data
-        if sample_id not in pose_data:
-            raise KeyError(f"Sample ID {sample_id} not found in gt.yml for folder {folder_id}.")
-
-        pose = pose_data[sample_id][0]  # There's only one pose per sample
-
-        # Extract translation and rotation
-        bbox = np.array(pose['obj_bb'], dtype=np.float32) #[4] ---> x_min, y_min, width, height
-        obj_id = np.array(pose['obj_id'], dtype=np.float32) #[1] ---> label
-
-        x_min, y_min, width, height = bbox
-        x_max = x_min + width
-        y_max = y_min + height
-        bbox = np.array([x_min, y_min, x_max, y_max], dtype=np.float32) #x_min, y_min, x_max, y_max
-
-        return bbox, obj_id
-        """
     
 
     def load_6d_pose(self, folder_id, sample_id):
@@ -179,26 +141,7 @@ class FasterDataset(Dataset):
         """Return the total number of samples in the selected split."""
         return len(self.samples)
 
-    """
-    def __getitem__(self, idx):
-        Load a dataset sample
-        folder_id, sample_id = self.samples[idx]
-        # Load the correct camera intrinsics and object info for this folder
-        folder_id = str(folder_id).zfill(2) 
-        img_path = os.path.join(self.dataset_root, 'data', folder_id, f"rgb/{sample_id:04d}.png")
 
-        img = self.load_image(img_path)
-        bbox, obj_id = self.load_6d_pose(folder_id, sample_id)
-
-        # TODO: Look at tensor creation "sourceTensor.clone().detach().requires_grad_(True)" instead of torch.tensor()
-        return {
-            "rgb": img,
-            "bbox": torch.tensor(bbox),
-            "obj_id": torch.tensor(obj_id)
-
-        }
-    """
-    
     def __getitem__(self, idx):
         """Load a dataset sample."""
         og_folder_id, sample_id = self.samples[idx]
