@@ -10,6 +10,7 @@ class Trainer():
         self.optimizer = optimizer
         self.wandb_instance = wandb_instance
         self.epochs = epochs
+        self.checkpoint_path = '/checkpoints'
 
     def train(self, dataloader, device):
         
@@ -50,8 +51,8 @@ class Trainer():
                 start = time.perf_counter()
                 # Using mixed precision training
                 print(device.type)
-                #with torch.autocast(device_type=device.type):
-                loss_dict = self.model(images, targets)
+                with torch.autocast(device_type='cuda', dtype=torch.float16):
+                    loss_dict = self.model(images, targets)
 
                 loss_classifier += loss_dict["loss_classifier"].item()
                 loss_box_reg += loss_dict["loss_box_reg"].item()
@@ -86,8 +87,8 @@ class Trainer():
 
                 progress_bar.set_postfix(total=total_loss/nr_batches, class_loss=loss_classifier/nr_batches, box_reg=loss_box_reg/nr_batches)
 
-                if nr_batches == 2:
-                    break
+                #if nr_batches == 2:
+                #    break
 
             avg_loss = total_loss / len(dataloader)
             train_losses.append(avg_loss)
@@ -108,4 +109,12 @@ class Trainer():
                                             "Time fit/calc_loss" : statistics.mean(timings["fit/loss"]),
                                             "Time backprop" : statistics.mean(timings["backprop"]),
                                         })
+        
+        #Add if statement here with some kind of input variable for toggle
+
+        torch.save({
+                'epoch': epoch,
+                'model_state_dict': self.model.state_dict(),
+                'optimizer_state_dict': self.optimizer.state_dict(),
+            }, self.checkpoint_path)
     
