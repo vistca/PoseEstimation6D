@@ -51,8 +51,8 @@ class Trainer():
                 start = time.perf_counter()
                 # Using mixed precision training
                 print(device.type)
-                with torch.autocast(device_type='cuda', dtype=torch.float16):
-                    loss_dict = self.model(images, targets)
+                #with torch.autocast(device_type='cuda', dtype=torch.float16):
+                loss_dict = self.model(images, targets)
 
                 loss_classifier += loss_dict["loss_classifier"].item()
                 loss_box_reg += loss_dict["loss_box_reg"].item()
