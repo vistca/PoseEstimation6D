@@ -10,8 +10,8 @@ optimizer : "Adam"
 scheduler : "warmup"
 
 # Hyperparams
-learning_rate : 0.01
-batch_size : 2
+learning_rate : 0.0001
+batch_size : 16
 epochs : 10
 dropout : 0.05
 
