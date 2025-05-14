@@ -2,6 +2,7 @@ from tqdm import tqdm
 import time
 import statistics
 import torch
+from torch.amp import autocast, GradScaler
 
 class Trainer():
 
@@ -49,9 +50,11 @@ class Trainer():
 
                 start = time.perf_counter()
                 # Using mixed precision training
-                print(device.type)
-                #with torch.autocast(device_type=device.type):
-                loss_dict = self.model(images, targets)
+                if device.type == 'cuda':
+                    with autocast(device.type):
+                        loss_dict = self.model(images, targets)
+                else:
+                    loss_dict = self.model(images, targets)
 
                 loss_classifier += loss_dict["loss_classifier"].item()
                 loss_box_reg += loss_dict["loss_box_reg"].item()
@@ -69,13 +72,13 @@ class Trainer():
                 #or 
                 #for param in model.parameters():
                 #param.grad = None
-                # scaler = torch.amp.GradScaler()
-                # scaler.scale(loss).backward()
-                # scaler.step(self.optimizer)
-                # scaler.update()
+                scaler = GradScaler()
+                scaler.scale(loss).backward()
+                scaler.step(self.optimizer)
+                scaler.update()
 
-                loss.backward()
-                self.optimizer.step()
+                #loss.backward()
+                #self.optimizer.step()
                 end = time.perf_counter()
                 timings["backprop"].append(end - start)
 
