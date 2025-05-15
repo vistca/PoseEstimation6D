@@ -13,7 +13,7 @@ class Trainer():
         self.epochs = epochs
         self.checkpoint_path = '/checkpoints'
 
-    def train(self, dataloader, device):
+    def train(self, train_loader, val_loader, device):
         
         train_losses = []
 
@@ -29,7 +29,7 @@ class Trainer():
             loss_rpn_box_reg = 0
             timings = {"DL update iter" : [], "load" : [], "fit/loss" : [], "backprop" : []}
 
-            progress_bar = tqdm(dataloader, desc="Training", ncols=100)
+            progress_bar = tqdm(train_loader, desc="Training", ncols=100)
             start = time.perf_counter()
             for batch_idx, batch in enumerate(progress_bar):
                 end = time.perf_counter()
@@ -93,31 +93,32 @@ class Trainer():
                 #if nr_batches == 2:
                 #    break
 
-            avg_loss = total_loss / len(dataloader)
+            avg_loss = total_loss / len(train_loader)
             train_losses.append(avg_loss)
 
             print(f"Epoch [{epoch+1}/{self.epochs}], Loss: {avg_loss:.4f}")
 
+
             self.wandb_instance.log_metric({"Training total_loss" : avg_loss,
-                                            "Training class_loss" : loss_classifier / len(dataloader),
-                                            "Training box_loss" : loss_box_reg / len(dataloader),
-                                            "Training background_loss" : loss_objectness / len(dataloader),
-                                            "Training rpn_box_loss" : loss_rpn_box_reg / len(dataloader)
+                                            "Training class_loss" : loss_classifier / len(train_loader),
+                                            "Training box_loss" : loss_box_reg / len(train_loader),
+                                            "Training background_loss" : loss_objectness / len(train_loader),
+                                            "Training rpn_box_loss" : loss_rpn_box_reg / len(train_loader)
                                             })
             
 
             self.wandb_instance.log_metric({
-                                            "DL update iter" : statistics.mean(timings["DL update iter"]),
-                                            "Time load_data" : statistics.mean(timings["load"]),
-                                            "Time fit/calc_loss" : statistics.mean(timings["fit/loss"]),
-                                            "Time backprop" : statistics.mean(timings["backprop"]),
+                                            "DL update iter" : statistics.median(timings["DL update iter"]),
+                                            "Time load_data" : statistics.median(timings["load"]),
+                                            "Time fit/calc_loss" : statistics.median(timings["fit/loss"]),
+                                            "Time backprop" : statistics.median(timings["backprop"]),
                                         })
         
         #Add if statement here with some kind of input variable for toggle
 
-        torch.save({
-                'epoch': epoch,
-                'model_state_dict': self.model.state_dict(),
-                'optimizer_state_dict': self.optimizer.state_dict(),
-            }, self.checkpoint_path)
+        # torch.save({
+        #         'epoch': epoch,
+        #         'model_state_dict': self.model.state_dict(),
+        #         'optimizer_state_dict': self.optimizer.state_dict(),
+        #     }, self.checkpoint_path)
     

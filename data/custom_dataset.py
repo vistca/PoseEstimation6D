@@ -2,7 +2,6 @@ import os
 import yaml
 import numpy as np
 import torch
-import open3d as o3d
 from torch.utils.data import Dataset
 from PIL import Image
 import torchvision.transforms as transforms

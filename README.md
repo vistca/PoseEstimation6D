@@ -16,6 +16,7 @@ After cloaning the project run the following commands in the terminal:
 pip install -r requirements.txt
 ```
 
+<<<<<<< Updated upstream
 For downloading the data and placing it in the correct path run
 ```
 python prep_data.py --gf {path to dataset.zip}
@@ -68,3 +69,12 @@ Answers from the supervisor session:
  - We could just use the MSE but if we want to we could define a custom loss function
 
 
+=======
+For downloading the data
+```
+python prep_data.py --gf {path to dataset.zip}
+´´´
+```
+python main.py --bs 32 --epochs 3 --no-log
+´´´
+>>>>>>> Stashed changes

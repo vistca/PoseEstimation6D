@@ -42,16 +42,17 @@ class RgbDataset(Dataset):
             transforms.ToTensor(),
         ])
         self.pose_data = {}
-        dirs = os.listdir(self.dataset_root + 'data')
+        dirs = os.listdir(self.dataset_root + '/data')
         for dir in dirs:
-            """Load the 6D pose (translation and rotation) for the object in this sample."""
-            pose_file = os.path.join(self.dataset_root, 'data', f"{dir:02d}", "gt.yml")
+            if os.path.isdir(self.dataset_root + "/data/" + dir):
+                """Load the 6D pose (translation and rotation) for the object in this sample."""
+                pose_file = os.path.join(self.dataset_root, 'data', dir, "gt.yml")
 
-            # Load the ground truth poses from the gt.yml file
-            with open(pose_file, 'r') as f:
-                pose_data = yaml.load(f, Loader=yaml.FullLoader)
-            
-            self.pose_data[dir] = pose_data
+                # Load the ground truth poses from the gt.yml file
+                with open(pose_file, 'r') as f:
+                    pose_data = yaml.load(f, Loader=yaml.FullLoader)
+                
+                self.pose_data[dir] = pose_data
 
 
     def get_all_samples(self):
@@ -99,8 +100,8 @@ class RgbDataset(Dataset):
         """Load a dataset sample."""
         folder_id, sample_id = self.samples[idx]
         # Load the correct camera intrinsics and object info for this folder
-
-        img_path = os.path.join(self.dataset_root, 'data', f"{folder_id:02d}", f"rgb/{sample_id:04d}.png")
+        folder_id = str(folder_id).zfill(2) 
+        img_path = os.path.join(self.dataset_root, 'data', folder_id, f"rgb/{sample_id:04d}.png")
 
         img = self.load_image(img_path)
         bbox, obj_id = self.load_6d_pose(folder_id, sample_id)

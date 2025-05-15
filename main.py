@@ -9,25 +9,32 @@ from data.custom_dataset import CustomDataset
 from torch.utils.data import DataLoader
 from models.fasterRCNN import FasterRCNN
 from models.yolo import Yolo
-from timm.data.loader import MultiEpochsDataLoader, fast_collate
+from timm.data.loader import MultiEpochsDataLoader
 from prep_data import download_data, yaml_to_json
 from data.faster_dataset import FasterDataset
-
-def tmploss():
-     return 1
+import os
 
 def run_program(parser):
     parsed_args = parser.parse_args()
+    dataset_root = parsed_args.data + "/Linemod_preprocessed"
 
     wandb_instance = WandbSetup("testround", parsed_args)
 
-    if parsed_args.ld != "":
+    if parsed_args.ld != "" and not os.path.exists(dataset_root):
         download_data(parsed_args.ld, parsed_args.data)
         yaml_to_json(parsed_args.data + "Linemod_preprocessed/data/")
 
-    modelloader = FasterRCNN()#ModelLoader(parsed_args.head, parsed_args.backbone)
+    model = FasterRCNN()#ModelLoader(parsed_args.head, parsed_args.backbone)
     #modelloader = Yolo()
-    model = modelloader.get_model()
+
+    if parsed_args.lm != "":
+        try:
+            model.load_state_dict(torch.load('checkpoints/'+parsed_args.lm + ".pt", weights_only=True))
+        except:
+             raise("Could not load the model, might be due to missmatching models")
+
+
+    #model = modelloader.get_model()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
     model_params = [p for p in model.parameters() if p.requires_grad]
@@ -42,17 +49,24 @@ def run_program(parser):
     
     train_dataset = FasterDataset(dataset_root, split="train")
     test_dataset = FasterDataset(dataset_root, split="test")
-
-    #Look at pin_memory
+    val_dataset = FasterDataset(dataset_root, split="val")
+    
     train_loader = MultiEpochsDataLoader(train_dataset, batch_size=parsed_args.bs, shuffle=True, num_workers=parsed_args.w)
     test_loader = MultiEpochsDataLoader(test_dataset, batch_size=parsed_args.bs, shuffle=True, num_workers=parsed_args.w)
-
+    val_loader = MultiEpochsDataLoader(val_dataset, batch_size=parsed_args.bs, shuffle=True, num_workers=parsed_args.w)
 
     print("done with loading")
-    trainer.train(train_loader, device)
+    trainer.train(train_loader, val_loader, device)
+
+
+    torch.save()
+
 
     print("testing phase")
     tester.validate(test_loader, device)
+
+    if parsed_args.sm != "":
+        torch.save(model.state_dict(), 'checkpoints/' + parsed_args.sm)
     
 
 def add_runtime_args(parser):
@@ -94,6 +108,12 @@ def add_runtime_args(parser):
     
     parser.add_argument('--w', type=int,
                         help='The number of workers that should be used', default=2)
+    
+    parser.add_argument('--lm', type=str,
+                        help='The name of the model that is to be loaded', default="")
+    
+    parser.add_argument('--sm', type=str,
+                        help='The name of the model that is to be saved', default="")
     
 
 if __name__ == "__main__":
