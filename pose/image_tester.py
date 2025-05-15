@@ -23,11 +23,12 @@ pose_data = {}
 with open(info_path + json_name, 'r') as f:
     pose_data = json.load(f)
 
-
 start = time.perf_counter()
 
+# [x_left, y_top, x_width, y_height]
 b = pose_data[nr][0]["obj_bb"] # bounding box
 
+img.show()
 
 crop = img.crop((b[0], b[1], b[0]+b[2], b[1]+b[3]))
 
@@ -42,6 +43,7 @@ crop.show()
 
 print(end - start)
 
+print(b)
 
 
 
