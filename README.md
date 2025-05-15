@@ -67,4 +67,6 @@ Answers from the supervisor session:
 
  - We could just use the MSE but if we want to we could define a custom loss function
 
+ - Input the rations of the image size transfomration to the fully connected layer of the model.
+
 

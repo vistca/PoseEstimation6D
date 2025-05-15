@@ -5,8 +5,8 @@ import os
 import time
 
 
-dir = "09"
-nr = "100"
+dir = "08"
+nr = "730"
 img_nr = "0" * (4 - len(nr))
 img_nr = img_nr + nr
 
@@ -27,6 +27,9 @@ start = time.perf_counter()
 
 # [x_left, y_top, x_width, y_height]
 b = pose_data[nr][0]["obj_bb"] # bounding box
+
+draw = ImageDraw.Draw(img)
+draw.rectangle((b[0], b[1], b[0]+b[2], b[1]+b[3]), width=2)
 
 img.show()
 
