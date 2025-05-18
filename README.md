@@ -67,14 +67,3 @@ Answers from the supervisor session:
  - Stretch and squeeze it to a fixed size (paddings could be used)
 
  - We could just use the MSE but if we want to we could define a custom loss function
-
-
-=======
-For downloading the data
-```
-python prep_data.py --gf {path to dataset.zip}
-´´´
-```
-python main.py --bs 32 --epochs 3 --no-log
-´´´
->>>>>>> Stashed changes
