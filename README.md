@@ -16,7 +16,6 @@ After cloaning the project run the following commands in the terminal:
 pip install -r requirements.txt
 ```
 
-<<<<<<< Updated upstream
 For downloading the data and placing it in the correct path run
 ```
 python prep_data.py --gf {path to dataset.zip}
