@@ -13,6 +13,7 @@ from timm.data.loader import MultiEpochsDataLoader
 from prep_data import download_data, yaml_to_json
 from data.faster_dataset import FasterDataset
 import os
+from train_test_handler import TTH
 
 def run_program(parser):
     parsed_args = parser.parse_args()
@@ -24,50 +25,51 @@ def run_program(parser):
         download_data(parsed_args.ld, parsed_args.data)
         yaml_to_json(parsed_args.data + "Linemod_preprocessed/data/")
 
-    model = FasterRCNN()#ModelLoader(parsed_args.head, parsed_args.backbone)
-    #modelloader = Yolo()
+    model = FasterRCNN()
 
     if parsed_args.lm != "":
         try:
-            model.load_state_dict(torch.load('checkpoints/'+parsed_args.lm + ".pt", weights_only=True))
+            model.get_model().load_state_dict(torch.load('checkpoints/'+parsed_args.lm + ".pt", weights_only=True))
+            print("Model loaded")
         except:
              raise("Could not load the model, might be due to missmatching models")
 
-
-    #model = modelloader.get_model()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = model.to(device)
+    model = model.get_model().to(device)
     model_params = [p for p in model.parameters() if p.requires_grad]
 
     optimloader = OptimLoader(parsed_args.optimizer, model_params, parsed_args.lr)
     optimizer = optimloader.get_optimizer()
 
-    trainer = Trainer(model, optimizer, wandb_instance, parsed_args.epochs)
-    tester = Tester(model, wandb_instance)
+    tth = TTH(model, optimizer, wandb_instance, parsed_args.epochs)
 
     dataset_root = parsed_args.data + "/Linemod_preprocessed"
+
+    with open('config/config.yaml') as f:
+            config_dict = yaml.safe_load(f)
+
+    split_percentage = {"train_%" : config_dict["train_%"],
+                        "test_%" : config_dict["test_%"],
+                        "val_%" : config_dict["val_%"],
+                        }
+
     
-    train_dataset = FasterDataset(dataset_root, split="train")
-    test_dataset = FasterDataset(dataset_root, split="test")
-    val_dataset = FasterDataset(dataset_root, split="val")
+    train_dataset = FasterDataset(dataset_root, split_percentage, split="train")
+    test_dataset = FasterDataset(dataset_root, split_percentage, split="test")
+    val_dataset = FasterDataset(dataset_root, split_percentage, split="val")
     
-    train_loader = MultiEpochsDataLoader(train_dataset, batch_size=parsed_args.bs, shuffle=True, num_workers=parsed_args.w)
-    test_loader = MultiEpochsDataLoader(test_dataset, batch_size=parsed_args.bs, shuffle=True, num_workers=parsed_args.w)
-    val_loader = MultiEpochsDataLoader(val_dataset, batch_size=parsed_args.bs, shuffle=True, num_workers=parsed_args.w)
-
-    print("done with loading")
-    trainer.train(train_loader, val_loader, device)
-
-
-    torch.save()
-
-
-    print("testing phase")
-    tester.validate(test_loader, device)
-
-    if parsed_args.sm != "":
-        torch.save(model.state_dict(), 'checkpoints/' + parsed_args.sm)
+    train_loader = MultiEpochsDataLoader(train_dataset, batch_size=parsed_args.bs, 
+                                         shuffle=True, num_workers=parsed_args.w)
     
+    val_loader = MultiEpochsDataLoader(val_dataset, batch_size=parsed_args.bs, 
+                                       shuffle=True, num_workers=parsed_args.w)
+    
+    test_loader = MultiEpochsDataLoader(test_dataset, batch_size=parsed_args.bs, 
+                                        shuffle=True, num_workers=parsed_args.w)
+
+
+    tth.train_test_val_model(train_loader, val_loader, test_loader,
+                             device, parsed_args.sm)
 
 def add_runtime_args(parser):
     with open('config/config.yaml') as f:

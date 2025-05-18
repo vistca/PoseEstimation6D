@@ -12,7 +12,7 @@ import open3d as o3d
 from tqdm import tqdm
 
 class FasterDataset(Dataset):
-    def __init__(self, dataset_root, split='train', train_ratio=0.8, seed=42):
+    def __init__(self, dataset_root, split_ratio, split='train', seed=42):
         """
         Args:
             dataset_root (str): Path to the dataset directory.
@@ -22,7 +22,7 @@ class FasterDataset(Dataset):
         """
         self.dataset_root = dataset_root
         self.split = split
-        self.train_ratio = train_ratio
+        self.split_ratio = split_ratio
         self.seed = seed
 
         # Get list of all samples (folder_id, sample_id)
@@ -34,20 +34,24 @@ class FasterDataset(Dataset):
 
         # Split into training and test sets
         self.train_samples, self.test_samples = train_test_split(
-            self.samples, train_size=self.train_ratio, random_state=self.seed
+            self.samples, train_size=(1-self.split_ratio['test_%']), random_state=self.seed
         )
+        
+        adjusted_train_perc = self.split_ratio['train_%'] / (self.split_ratio['train_%'] + self.split_ratio['val_%'])
 
         self.train_samples, self.val_samples = train_test_split(
-            self.train_samples, train_size=0.8, random_state=42
+            self.train_samples, train_size=adjusted_train_perc, random_state=42
         )
 
         # Select the appropriate split
-        if split == 'train':
-            self.samples == self.train_samples
-        elif split == 'val':
-            self.samples == self.val_samples
+        if self.split == "train":
+            self.samples = self.train_samples
+        elif self.split == "val":
+            self.samples = self.val_samples
         else:
             self.samples = self.test_samples
+
+        print(f"Nr samples {len(self.samples)} for {self.split}")
 
         # Define image transformations
         self.train_transform = transforms.Compose([

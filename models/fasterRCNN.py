@@ -18,6 +18,9 @@ class FasterRCNN():
         in_features = model.roi_heads.box_predictor.cls_score.in_features
         model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(in_features, config_dict['output_channels'])
         
+        
+
+
         # Disable backbone grads?
         #model.backbone.requires_grad_(False)
 
