@@ -17,3 +17,6 @@ dropout : 0.05
 
 #Other configs
 data_dir : "datasets/"
+train_% : 0.6
+val_% : 0.2
+test_% : 0.2

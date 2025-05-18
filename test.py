@@ -11,7 +11,7 @@ class Tester:
         self.wandb_instance = wandb_instance
 
 
-    def validate(self, dataloader, device):
+    def validate(self, dataloader, device, type):
 
         self.model.eval()
         val_loss = 0.0
@@ -21,10 +21,10 @@ class Tester:
         loss_rpn_box_reg = 0
         metric = MeanAveragePrecision()
 
-        print("Starting validation...")
+        print(f"Starting {type}...")
 
         with torch.no_grad():
-            for batch in tqdm(dataloader, desc="Validating", ncols=100):
+            for batch in tqdm(dataloader, desc=f"{type}", ncols=100):
                 images = batch["rgb"].to(device)
                 targets = []
                 print("moving to device")
@@ -71,24 +71,25 @@ class Tester:
                     })
 
                 metric.update(preds, gts)
+                break
 
         avg_loss = val_loss / len(dataloader)
         val_metrics = metric.compute()
 
         # Log to wandb
         self.wandb_instance.log_metric({
-            "Validation total_loss": avg_loss,
-            "Validation class_loss": loss_classifier / len(dataloader),
-            "Validation box_loss": loss_box_reg / len(dataloader),
-            "Validation background_loss": loss_objectness / len(dataloader),
-            "Validation rpn_box_loss": loss_rpn_box_reg / len(dataloader),
-            "mAP@IoU=0.5:0.95": val_metrics["map"].item(),
-            "mAP@IoU=0.5": val_metrics["map_50"].item(),
-            "mAP@IoU=0.75": val_metrics["map_75"].item(),
-            "AR@max=1": val_metrics["mar_1"].item(),
-            "AR@max=10": val_metrics["mar_10"].item(),
-            "AR@max=100": val_metrics["mar_100"].item(),
+            f"{type} total_loss": avg_loss,
+            f"{type} class_loss": loss_classifier / len(dataloader),
+            f"{type} box_loss": loss_box_reg / len(dataloader),
+            f"{type} background_loss": loss_objectness / len(dataloader),
+            f"{type} rpn_box_loss": loss_rpn_box_reg / len(dataloader),
+            f"{type} mAP@IoU=0.5:0.95": val_metrics["map"].item(),
+            f"{type} mAP@IoU=0.5": val_metrics["map_50"].item(),
+            f"{type} mAP@IoU=0.75": val_metrics["map_75"].item(),
+            f"{type} AR@max=1": val_metrics["mar_1"].item(),
+            f"{type} AR@max=10": val_metrics["mar_10"].item(),
+            f"{type} AR@max=100": val_metrics["mar_100"].item(),
         })
 
-        print(f"Validation Loss: {avg_loss:.4f}, mAP@0.5:0.95 = {val_metrics['map'].item():.4f}")
+        return avg_loss, val_metrics["map"].item()
 
