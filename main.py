@@ -2,13 +2,8 @@ from utils.wandb_setup import WandbSetup
 import argparse
 import yaml
 import torch
-from train import Trainer
-from test import Tester
 from utils.optimizer_loader import OptimLoader
-from data.custom_dataset import CustomDataset
-from torch.utils.data import DataLoader
 from models.fasterRCNN import FasterRCNN
-from models.yolo import Yolo
 from timm.data.loader import MultiEpochsDataLoader
 from prep_data import download_data, yaml_to_json
 from data.faster_dataset import FasterDataset
@@ -32,7 +27,7 @@ def run_program(parser):
             model.get_model().load_state_dict(torch.load('checkpoints/'+parsed_args.lm + ".pt", weights_only=True))
             print("Model loaded")
         except:
-             raise("Could not load the model, might be due to missmatching models")
+             raise("Could not load the model, might be due to missmatching models or something else")
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.get_model().to(device)
@@ -48,7 +43,8 @@ def run_program(parser):
     with open('config/config.yaml') as f:
             config_dict = yaml.safe_load(f)
 
-    split_percentage = {"train_%" : config_dict["train_%"],
+    split_percentage = {
+                        "train_%" : config_dict["train_%"],
                         "test_%" : config_dict["test_%"],
                         "val_%" : config_dict["val_%"],
                         }
