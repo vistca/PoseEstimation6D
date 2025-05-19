@@ -6,7 +6,7 @@ import time
 
 
 dir = "08"
-nr = "730"
+nr = "230"
 img_nr = "0" * (4 - len(nr))
 img_nr = img_nr + nr
 
@@ -35,7 +35,7 @@ img.show()
 
 crop = img.crop((b[0], b[1], b[0]+b[2], b[1]+b[3]))
 
-resize_format = (64, 64)
+resize_format = (224, 224)
 crop = crop.resize(resize_format)
 
 end = time.perf_counter()
