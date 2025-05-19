@@ -71,7 +71,6 @@ class Tester:
                     })
 
                 metric.update(preds, gts)
-                break
 
         avg_loss = val_loss / len(dataloader)
         val_metrics = metric.compute()
