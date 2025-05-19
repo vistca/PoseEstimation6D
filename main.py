@@ -14,7 +14,7 @@ def run_program(parser):
     parsed_args = parser.parse_args()
     dataset_root = parsed_args.data + "/Linemod_preprocessed"
 
-    wandb_instance = WandbSetup("testround", parsed_args)
+    wandb_instance = WandbSetup("testround", parsed_args, "PoseEstimation6D")
 
     if parsed_args.ld != "" and not os.path.exists(dataset_root):
         download_data(parsed_args.ld, parsed_args.data)

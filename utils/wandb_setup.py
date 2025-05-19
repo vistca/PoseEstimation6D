@@ -4,7 +4,7 @@ import wandb
 import os
 
 class WandbSetup():
-    def __init__(self, name_of_round, parsed_args):
+    def __init__(self, name_of_round, parsed_args, project_name):
         os.environ["WANDB_SILENT"] = "true"
         self.logging = parsed_args.log
         
@@ -26,7 +26,7 @@ class WandbSetup():
                 # Set the wandb entity where your project will be logged (generally your team name).
                 entity="fantastic_4_0",
                 # Set the wandb project where this run will be logged.
-                project="PoseEstimation6D",
+                project=project_name,
                 name = name_of_round,
                 # Track hyperparameters and run metadata.
                 config={
