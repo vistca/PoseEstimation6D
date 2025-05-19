@@ -66,5 +66,3 @@ Answers from the supervisor session:
  - Stretch and squeeze it to a fixed size (paddings could be used)
 
  - We could just use the MSE but if we want to we could define a custom loss function
-
-
