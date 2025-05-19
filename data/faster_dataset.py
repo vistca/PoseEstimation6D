@@ -12,7 +12,7 @@ import open3d as o3d
 from tqdm import tqdm
 
 class FasterDataset(Dataset):
-    def __init__(self, dataset_root, split='train', train_ratio=0.8, seed=42):
+    def __init__(self, dataset_root, split_ratio, split='train', seed=42):
         """
         Args:
             dataset_root (str): Path to the dataset directory.
@@ -22,7 +22,7 @@ class FasterDataset(Dataset):
         """
         self.dataset_root = dataset_root
         self.split = split
-        self.train_ratio = train_ratio
+        self.split_ratio = split_ratio
         self.seed = seed
 
         # Get list of all samples (folder_id, sample_id)
@@ -34,17 +34,37 @@ class FasterDataset(Dataset):
 
         # Split into training and test sets
         self.train_samples, self.test_samples = train_test_split(
-            self.samples, train_size=self.train_ratio, random_state=self.seed
+            self.samples, train_size=(1-self.split_ratio['test_%']), random_state=self.seed
+        )
+        
+        adjusted_train_perc = self.split_ratio['train_%'] / (self.split_ratio['train_%'] + self.split_ratio['val_%'])
+
+        self.train_samples, self.val_samples = train_test_split(
+            self.train_samples, train_size=adjusted_train_perc, random_state=42
         )
 
         # Select the appropriate split
-        self.samples = self.train_samples if split == 'train' else self.test_samples
+        if self.split == "train":
+            self.samples = self.train_samples
+        elif self.split == "val":
+            self.samples = self.val_samples
+        else:
+            self.samples = self.test_samples
+
+        print(f"Nr samples {len(self.samples)} for {self.split}")
 
         # Define image transformations
-        self.transform = transforms.Compose([
+        self.train_transform = transforms.Compose([
             transforms.ToTensor(),
         ])
 
+        self.val_test_transform = transforms.Compose([
+            transforms.ToTensor(),
+        ])
+
+        self.load_sample_confs()
+
+    def load_sample_confs(self):
         self.pose_data = {}
         self.cam_data = {}
 
@@ -56,8 +76,6 @@ class FasterDataset(Dataset):
         dirs = os.listdir(self.dataset_root + '/data')
         for dir in tqdm(dirs):
             if os.path.isdir(self.dataset_root + "/data/" + dir):
-               
-                
                 pose_file = os.path.join(self.dataset_root, 'data', dir, "gt.json")
                 cam_file = os.path.join(self.dataset_root, 'data', dir, "info.json")
                 objects_info_path = os.path.join(self.dataset_root, 'models', f"models_info.yml")
@@ -86,7 +104,10 @@ class FasterDataset(Dataset):
     def load_image(self, img_path):
         """Load an RGB image and convert to tensor."""
         img = Image.open(img_path).convert("RGB")
-        return self.transform(img)
+        if self.split == "train":
+            return self.train_transform(img)
+        
+        return self.val_test_transform(img)
     
     def load_depth(self, depth_path):
         """Load a depth image and convert to tensor."""
@@ -171,7 +192,6 @@ class FasterDataset(Dataset):
             "rotation": torch.tensor(rotation),
             "bbox": torch.tensor(bbox),
             "obj_id": torch.tensor(obj_id)
-
         }
 
 
