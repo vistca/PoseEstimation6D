@@ -9,6 +9,8 @@ from prep_data import download_data, yaml_to_json
 from data.faster_dataset import FasterDataset
 import os
 from train_test_handler import TTH
+from test import Tester
+from train import Trainer
 
 def run_program(parser):
     parsed_args = parser.parse_args()
@@ -20,7 +22,7 @@ def run_program(parser):
         download_data(parsed_args.ld, parsed_args.data)
         yaml_to_json(parsed_args.data + "Linemod_preprocessed/data/")
 
-    model = FasterRCNN(parsed_args.tr)
+    model = FasterRCNN(parsed_args.tr, parsed_args.fm)
 
     if parsed_args.lm != "":
         try:
@@ -36,7 +38,13 @@ def run_program(parser):
     optimloader = OptimLoader(parsed_args.optimizer, model_params, parsed_args.lr)
     optimizer = optimloader.get_optimizer()
 
-    tth = TTH(model, optimizer, wandb_instance, parsed_args.epochs)
+    trainer = Trainer(model, optimizer, wandb_instance)
+    tester = Tester(model, wandb_instance)
+
+    tth = TTH(model,optimizer, 
+              wandb_instance, parsed_args.epochs,
+              trainer, tester
+              )
 
     dataset_root = parsed_args.data + "/Linemod_preprocessed"
 
@@ -114,6 +122,9 @@ def add_runtime_args(parser):
                         help='The name of the model that is to be saved', default="")
     
     parser.add_argument('--tr', type=int,
+                        help='Specifies the amount of trainable params, 0 min / 5 max', default=0)
+    
+    parser.add_argument('--fm', type=str,
                         help='The name of the model that is to be saved', default=0)
     
 

@@ -94,5 +94,7 @@ class Tester:
             f"{type} AR@max=100": val_metrics["mar_100"].item(),
         })
 
-        return avg_loss, val_metrics["map"].item()
-
+        return {
+            f"Average {type} loss" : round(avg_loss, 4), 
+            f"Average {type} mAP" : round(val_metrics["map"].item(), 4)
+        }, round(avg_loss, 4)
