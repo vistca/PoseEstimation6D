@@ -9,6 +9,8 @@ from prep_data import download_data, yaml_to_json
 from data.faster_dataset import FasterDataset
 import os
 from train_test_handler import TTH
+from test import Tester
+from train import Trainer
 
 def run_program(parser):
     parsed_args = parser.parse_args()
@@ -36,7 +38,13 @@ def run_program(parser):
     optimloader = OptimLoader(parsed_args.optimizer, model_params, parsed_args.lr)
     optimizer = optimloader.get_optimizer()
 
-    tth = TTH(model, optimizer, wandb_instance, parsed_args.epochs)
+    trainer = Trainer(model, optimizer, wandb_instance)
+    tester = Tester(model, wandb_instance)
+
+    tth = TTH(model,optimizer, 
+              wandb_instance, parsed_args.epochs,
+              trainer, tester
+              )
 
     dataset_root = parsed_args.data + "/Linemod_preprocessed"
 
