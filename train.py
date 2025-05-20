@@ -13,13 +13,18 @@ class Trainer():
         self.wandb_instance = wandb_instance
         self.epochs = epochs
 
+    """
+        Using mixed precision training isn't actually making the model learn
+        Removed it and the model seems to be learning better
+        Look at this to see if we can use mixed precision with learning as well
+    """
     def train_one_epoch(self, train_loader, device):
 
         metric = MeanAveragePrecision()
 
         self.model.train()
         total_loss = 0.0
-        nr_batches = 0
+        scaler = GradScaler()
 
         loss_classifier = 0
         loss_box_reg = 0
@@ -29,8 +34,9 @@ class Trainer():
 
         progress_bar = tqdm(train_loader, desc="Training", ncols=100)
         start = time.perf_counter()
-        for batch_idx, batch in enumerate(progress_bar):
+        for batch_id, batch in enumerate(progress_bar):
             end = time.perf_counter()
+            self.optimizer.zero_grad(set_to_none=True)
             self.model.train()
             timings["DL update iter"].append(end - start)
             
@@ -56,22 +62,22 @@ class Trainer():
             else:
                 loss_dict = self.model(images, targets)
             
-            self.model.eval()
-            outputs = self.model(images)
-            preds = []
-            gts = []
-            for pred, tgt in zip(outputs, targets):
-                preds.append({
-                    "boxes": pred["boxes"].cpu(),
-                    "scores": pred["scores"].cpu(),
-                    "labels": pred["labels"].cpu()
-                })
-                gts.append({
-                    "boxes": tgt["boxes"].cpu(),
-                    "labels": tgt["labels"].cpu()
-                })
+            # self.model.eval()
+            # outputs = self.model(images)
+            # preds = []
+            # gts = []
+            # for pred, tgt in zip(outputs, targets):
+            #     preds.append({
+            #         "boxes": pred["boxes"].cpu(),
+            #         "scores": pred["scores"].cpu(),
+            #         "labels": pred["labels"].cpu()
+            #     })
+            #     gts.append({
+            #         "boxes": tgt["boxes"].cpu(),
+            #         "labels": tgt["labels"].cpu()
+            #     })
 
-            metric.update(preds, gts)
+            # metric.update(preds, gts)
               
 
             loss_classifier += loss_dict["loss_classifier"].item()
@@ -84,9 +90,8 @@ class Trainer():
             timings["fit/loss"].append(end - start)
 
             start = time.perf_counter()
-            self.optimizer.zero_grad(set_to_none=True)
+            
 
-            scaler = GradScaler()
             scaler.scale(loss).backward()
             scaler.step(self.optimizer)
             scaler.update()
@@ -97,13 +102,13 @@ class Trainer():
             # Track loss
             total_loss += loss.item()
 
-            nr_batches += 1
-
-            progress_bar.set_postfix(total=total_loss/nr_batches, class_loss=loss_classifier/nr_batches, box_reg=loss_box_reg/nr_batches)
+            progress_bar.set_postfix(total=total_loss/(batch_id + 1), 
+                                     class_loss=loss_classifier/(batch_id + 1), 
+                                     box_reg=loss_box_reg/(batch_id + 1))
 
         # Inference for mAP
 
-        val_metrics = metric.compute()
+        #val_metrics = metric.compute()
 
         avg_loss = total_loss / len(train_loader)
 
@@ -123,5 +128,5 @@ class Trainer():
                                         "Time backprop" : statistics.median(timings["backprop"]),
                                     })
     
-        return avg_loss, val_metrics["map"].item()
+        return avg_loss, 1#val_metrics["map"].item()
     

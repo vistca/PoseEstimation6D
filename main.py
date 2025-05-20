@@ -20,7 +20,7 @@ def run_program(parser):
         download_data(parsed_args.ld, parsed_args.data)
         yaml_to_json(parsed_args.data + "Linemod_preprocessed/data/")
 
-    model = FasterRCNN()
+    model = FasterRCNN(parsed_args.tr)
 
     if parsed_args.lm != "":
         try:
@@ -112,6 +112,9 @@ def add_runtime_args(parser):
     
     parser.add_argument('--sm', type=str,
                         help='The name of the model that is to be saved', default="")
+    
+    parser.add_argument('--tr', type=int,
+                        help='The name of the model that is to be saved', default=0)
     
 
 if __name__ == "__main__":
