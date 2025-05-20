@@ -8,8 +8,6 @@ class CustomEfficientNet(nn.Module):
 
         base_model = models.efficientnet_b3(weights=models.EfficientNet_B3_Weights.DEFAULT)
 
-        print(base_model)
-
         for param in base_model.features.parameters():
             param.requires_grad = False
 
