@@ -66,3 +66,11 @@ Answers from the supervisor session:
  - Stretch and squeeze it to a fixed size (paddings could be used)
 
  - We could just use the MSE but if we want to we could define a custom loss function
+
+ - Input the rations of the image size transfomration to the fully connected layer of the model.
+
+
+TODO:
+ - Add object id as another input to the classifier of the pose estimator
+
+ - Normalize the images with std and mean???

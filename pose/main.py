@@ -3,7 +3,7 @@ import argparse
 import yaml
 import torch
 from utils.optimizer_loader import OptimLoader
-from models.fasterRCNN import FasterRCNN
+from pose.models.efficientNet import EfficientNet
 from timm.data.loader import MultiEpochsDataLoader
 from prep_data import download_data, yaml_to_json
 from data.faster_dataset import FasterDataset
@@ -14,13 +14,12 @@ def run_program(parser):
     parsed_args = parser.parse_args()
     dataset_root = parsed_args.data + "/Linemod_preprocessed"
 
-    wandb_instance = WandbSetup("testround", parsed_args, "PoseEstimation6D")
+    wandb_instance = WandbSetup("testround", parsed_args, "PosePhase3")
 
     if parsed_args.ld != "" and not os.path.exists(dataset_root):
         download_data(parsed_args.ld, parsed_args.data)
         yaml_to_json(parsed_args.data + "Linemod_preprocessed/data/")
 
-    model = FasterRCNN(parsed_args.tr)
 
     if parsed_args.lm != "":
         try:
@@ -30,9 +29,11 @@ def run_program(parser):
              raise("Could not load the model, might be due to missmatching models or something else")
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = model.get_model().to(device)
+    
+    efficient_net = EfficientNet()
+    model = efficient_net.get_model().to(device)
     model_params = [p for p in model.parameters() if p.requires_grad]
-
+    
     optimloader = OptimLoader(parsed_args.optimizer, model_params, parsed_args.lr)
     optimizer = optimloader.get_optimizer()
 
@@ -112,9 +113,6 @@ def add_runtime_args(parser):
     
     parser.add_argument('--sm', type=str,
                         help='The name of the model that is to be saved', default="")
-    
-    parser.add_argument('--tr', type=int,
-                        help='The name of the model that is to be saved', default=0)
     
 
 if __name__ == "__main__":
