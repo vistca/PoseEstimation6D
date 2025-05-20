@@ -74,3 +74,5 @@ TODO:
  - Add object id as another input to the classifier of the pose estimator
 
  - Normalize the images with std and mean???
+
+ - Add that we separate the checkpoints for Faster R-CNN and EfficientNet
