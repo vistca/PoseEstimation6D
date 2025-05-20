@@ -69,4 +69,6 @@ Answers from the supervisor session:
 
  - Input the rations of the image size transfomration to the fully connected layer of the model.
 
+ - Add object id as another input to the classifier of the pose estimator
+
 

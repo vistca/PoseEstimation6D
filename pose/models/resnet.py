@@ -6,7 +6,7 @@ class ResNet():
     def __init__(self):
         with open('config/config.yaml') as f:
             config_dict = yaml.safe_load(f)
-
+    
     # Old weights with accuracy 76.130%
     model1 = resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)
 
