@@ -3,7 +3,7 @@ import torchvision
 import yaml
 
 class FasterRCNN():
-    def __init__(self):
+    def __init__(self, trainable):
         with open('config/config.yaml') as f:
             config_dict = yaml.safe_load(f)
 
@@ -14,7 +14,7 @@ class FasterRCNN():
 
         # Trainable layers -> 0 resulst in the backbone not being 
         # trainable at all, 5 is all layers are trainable
-        model = torchvision.models.detection.fasterrcnn_resnet50_fpn(weights='DEFAULT', trainable_backbone_layers=0)
+        model = torchvision.models.detection.fasterrcnn_resnet50_fpn(weights='DEFAULT', trainable_backbone_layers=trainable)
         in_features = model.roi_heads.box_predictor.cls_score.in_features
         model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(in_features, config_dict['output_channels'])
         
@@ -40,4 +40,3 @@ class FasterRCNN():
 
     def get_model(self):
         return self.model
-    

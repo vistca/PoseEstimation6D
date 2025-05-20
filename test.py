@@ -22,24 +22,25 @@ class Tester:
         metric = MeanAveragePrecision()
 
         print(f"Starting {type}...")
+        progress_bar = tqdm(dataloader, desc=type, ncols=100)
 
         with torch.no_grad():
-            for batch in tqdm(dataloader, desc=f"{type}", ncols=100):
+            for batch_id, batch in enumerate(progress_bar):
                 images = batch["rgb"].to(device)
                 targets = []
-                print("moving to device")
                 for i in range(images.shape[0]):
                     target = {
                         "boxes": batch["bbox"][i].to(device).unsqueeze(0),
                         "labels": batch["obj_id"][i].to(device).long().unsqueeze(0)
                     }
                     targets.append(target)
-                print("done moving to device")
 
                 # Forward pass
 
                 # weird quirk with eval() only returning predictions. Probably
                 # bad practice to elvaluate in train() mode.
+
+                # doing it like this takes forever, might need to check this and update it accordingly
 
                 self.model.train()
                 loss_dict = self.model(images, targets)
@@ -71,6 +72,9 @@ class Tester:
                     })
 
                 metric.update(preds, gts)
+                progress_bar.set_postfix(total=val_loss/(batch_id + 1), 
+                                         class_loss=loss_classifier/(batch_id + 1), 
+                                         box_reg=loss_box_reg/(batch_id + 1))
 
         avg_loss = val_loss / len(dataloader)
         val_metrics = metric.compute()
