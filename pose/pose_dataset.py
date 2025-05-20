@@ -159,7 +159,7 @@ class PoseDataset(Dataset):
 
     def rgb_crop_img(self, rgb_img, b): # b is the bounding box for the image
         crop = rgb_img.crop((b[0], b[1], b[0]+b[2], b[1]+b[3]))
-        resize_format = (224, 224)
+        resize_format = (300, 300)
         return crop.resize(resize_format)
 
 

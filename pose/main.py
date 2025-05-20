@@ -3,7 +3,7 @@ import argparse
 import yaml
 import torch
 from utils.optimizer_loader import OptimLoader
-from models.poseModel1 import PoseModel1
+from pose.models.efficientNet import EfficientNet
 from timm.data.loader import MultiEpochsDataLoader
 from prep_data import download_data, yaml_to_json
 from data.faster_dataset import FasterDataset
@@ -20,7 +20,6 @@ def run_program(parser):
         download_data(parsed_args.ld, parsed_args.data)
         yaml_to_json(parsed_args.data + "Linemod_preprocessed/data/")
 
-    model = PoseModel1()
 
     if parsed_args.lm != "":
         try:
@@ -30,9 +29,11 @@ def run_program(parser):
              raise("Could not load the model, might be due to missmatching models or something else")
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = model.get_model().to(device)
+    
+    efficient_net = EfficientNet()
+    model = efficient_net.get_model().to(device)
     model_params = [p for p in model.parameters() if p.requires_grad]
-
+    
     optimloader = OptimLoader(parsed_args.optimizer, model_params, parsed_args.lr)
     optimizer = optimloader.get_optimizer()
 
