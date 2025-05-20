@@ -15,16 +15,11 @@ class Trainer():
 
     def train_one_epoch(self, train_loader, device):
 
-        #metric = MeanAveragePrecision()
-
-        self.model.train()
+        self.model.train() # Maybe unnecessary?
         total_loss = 0.0
         nr_batches = 0
 
-        loss_classifier = 0
-        loss_box_reg = 0
-        loss_objectness = 0
-        loss_rpn_box_reg = 0
+        loss_mse = 0
         timings = {"DL update iter" : [], "load" : [], "fit/loss" : [], "backprop" : []}
 
         progress_bar = tqdm(train_loader, desc="Training", ncols=100)
@@ -43,16 +38,21 @@ class Trainer():
                 target = {}
                 target["boxes"] = batch["bbox"][i].to(device).unsqueeze(0)  # Add batch dimension
                 target["labels"] = batch["obj_id"][i].to(device).long().unsqueeze(0)  # Add batch dimension
+                target["translation"] = batch["translation"][i].to(device).unsqueeze(0) # Add batch dimension
+                target["rotation"] = batch["rotation"][i].to(device).unsqueeze(0) # Add batch dimension
                 targets.append(target)
+
+            # TODO: Create "inputs" that contains what EfficientNet expects
             
             end = time.perf_counter()
             timings["load"].append(end - start)
 
             start = time.perf_counter()
+            # TODO: Why cuda, change call to self.model to instead calculate custom mse loss
             # Using mixed precision training
             if device.type == 'cuda':
                 with autocast(device.type):
-                    loss_dict = self.model(images, targets)
+                    loss_dict = self.model(images, targets)  
             else:
                 loss_dict = self.model(images, targets)
             
@@ -71,6 +71,7 @@ class Trainer():
                     "labels": tgt["labels"].cpu()
                 })
 
+            # TODO: Change to evaluate MSE
             #metric.update(preds, gts)
               
 
