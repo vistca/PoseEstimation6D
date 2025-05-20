@@ -105,9 +105,6 @@ class Trainer():
             progress_bar.set_postfix(total=total_loss/(batch_id + 1), 
                                      class_loss=loss_classifier/(batch_id + 1), 
                                      box_reg=loss_box_reg/(batch_id + 1))
-            
-            if batch_id == 1:
-                return 0, 1
 
         # Inference for mAP
 
