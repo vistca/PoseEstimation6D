@@ -20,7 +20,7 @@ def run_program(parser):
         download_data(parsed_args.ld, parsed_args.data)
         yaml_to_json(parsed_args.data + "Linemod_preprocessed/data/")
 
-    model = FasterRCNN(parsed_args.tr)
+    model = FasterRCNN(parsed_args.tr, parsed_args.fm)
 
     if parsed_args.lm != "":
         try:
@@ -114,6 +114,9 @@ def add_runtime_args(parser):
                         help='The name of the model that is to be saved', default="")
     
     parser.add_argument('--tr', type=int,
+                        help='Specifies the amount of trainable params, 0 min / 5 max', default=0)
+    
+    parser.add_argument('--fm', type=str,
                         help='The name of the model that is to be saved', default=0)
     
 
