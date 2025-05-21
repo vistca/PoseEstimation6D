@@ -7,17 +7,11 @@ from torchmetrics.detection.mean_ap import MeanAveragePrecision
 
 class Trainer():
 
-    def __init__(self, model, optimizer, wandb_instance, epochs):
+    def __init__(self, model, optimizer, wandb_instance):
         self.model = model
         self.optimizer = optimizer
         self.wandb_instance = wandb_instance
-        self.epochs = epochs
 
-    """
-        Using mixed precision training isn't actually making the model learn
-        Removed it and the model seems to be learning better
-        Look at this to see if we can use mixed precision with learning as well
-    """
     def train_one_epoch(self, train_loader, device):
 
         metric = MeanAveragePrecision()
@@ -128,5 +122,8 @@ class Trainer():
                                         "Time backprop" : statistics.median(timings["backprop"]),
                                     })
     
-        return avg_loss, 1#val_metrics["map"].item()
+        return {
+            "Average training loss" : round(avg_loss, 4),
+            "Average training mAP" : 1 #round(train_avg_mAP, 4)
+        }
     
