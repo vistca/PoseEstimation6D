@@ -17,7 +17,7 @@ class TTH():
         #self.scheduler = ExponentialLR(self.optimizer, gamma=0.9)
 
     def save_model(self, path, prev_losses, curr_loss):
-        if curr_loss < min(prev_losses):
+        if curr_loss <= min(prev_losses):
             if os.path.exists(path):
                 os.remove(path)
             torch.save(self.model.state_dict(), 'checkpoints/'+ path + ".pt")
@@ -53,7 +53,7 @@ class TTH():
             save_status = "Unapplicable"
             if save_path != "":
                 save_status = self.save_model(save_path, 
-                                              val_output,
+                                              val_comp,
                                               comp_metric)
 
 
