@@ -2,7 +2,7 @@ from tqdm import tqdm
 import time
 import statistics
 import torch
-from torch.amp import autocast, GradScaler
+from torch.cuda.amp import autocast, GradScaler
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
 
 class Trainer():

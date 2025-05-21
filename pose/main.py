@@ -6,9 +6,9 @@ from utils.optimizer_loader import OptimLoader
 from pose.models.efficientNet import CustomEfficientNet
 from timm.data.loader import MultiEpochsDataLoader
 from prep_data import download_data, yaml_to_json
-from pose_dataset import PoseDataset
+from pose.pose_dataset import PoseDataset
 import os
-from train_test_handler import TTH
+from pose.train_test_handler import TTH
 
 def run_program(parser):
     parsed_args = parser.parse_args()
@@ -31,7 +31,7 @@ def run_program(parser):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     efficient_net = CustomEfficientNet()
-    model = efficient_net.get_model().to(device)
+    model = efficient_net.to(device)
     model_params = [p for p in model.parameters() if p.requires_grad]
     
     optimloader = OptimLoader(parsed_args.optimizer, model_params, parsed_args.lr)

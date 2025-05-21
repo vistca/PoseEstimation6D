@@ -4,7 +4,7 @@ import statistics
 import torch
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
 
-class Tester:
+class Tester():
 
     def __init__(self, model, wandb_instance):
         self.model = model

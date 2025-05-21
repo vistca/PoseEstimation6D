@@ -47,7 +47,7 @@ class CustomEfficientNet(nn.Module):
 
         return self.regressor(features)
 
-CustomEfficientNet()
+
 
 
 
