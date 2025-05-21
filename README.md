@@ -30,6 +30,10 @@ python main.py --bs 32 --epochs 3 --no-log
 python main.py --bs 32 --epochs 3 --wb {your key}
 ```
 
+# Running pose/main,py
+python -m pose.main --bs 32 --epochs 3 --no-log
+```
+
 Current state of the project:
 
  - We have the Faster R-CNN but it has not trained it

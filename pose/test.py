@@ -24,22 +24,20 @@ class Tester():
             for batch_id, batch in enumerate(progress_bar):
 
                 nr_datapoints = batch["rgb"].shape[0]
-                targets = []
+                targets = torch.empty(nr_datapoints, 12)
                 inputs = []
 
-                # We must be able to improve/remove this loop
+                # We must be able to improve/remove this loop                
                 for i in range(nr_datapoints):
-                    
                     translation = batch["translation"][i].to(device).unsqueeze(0) # Add batch dimension
-                    rotation = batch["rotation"][i].to(device).unsqueeze(0) # Add batch dimension                
-                    target = torch.cat((translation, rotation), dim=0)
-
-                    targets.append(target)
+                    rotation = batch["rotation"][i].to(device).flatten().unsqueeze(0) # Add batch dimension    
+                    target = torch.cat((translation, rotation), dim=1)
+                    targets[i] = target            
                 
                 for i in range(nr_datapoints):
                     input = {}
                     input["rgb"] = batch["rgb"][i].to(device).unsqueeze(0) # Add batch dimension
-                    input["boxes"] = batch["bbox"][i].to(device).unsqueeze(0)  # Add batch dimension
+                    input["bbox"] = batch["bbox"][i].to(device).unsqueeze(0)  # Add batch dimension
                     input["labels"] = batch["obj_id"][i].to(device).long().unsqueeze(0)  # Add batch dimension
                     inputs.append(input)
 
@@ -68,5 +66,5 @@ class Tester():
             f"{type} total_loss": avg_loss,
         })
 
-        return round(avg_loss, 4)
+        return avg_loss
     

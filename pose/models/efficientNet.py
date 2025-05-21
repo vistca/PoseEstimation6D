@@ -26,6 +26,7 @@ class CustomEfficientNet(nn.Module):
         )
 
     def forward(self, x):
+        
         imgs = torch.cat([sample["rgb"] for sample in x], dim=0)
         bboxs = torch.cat([sample["bbox"] for sample in x], dim=0)
 
