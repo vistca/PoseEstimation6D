@@ -30,6 +30,10 @@ python main.py --bs 32 --epochs 3 --no-log
 python main.py --bs 32 --epochs 3 --wb {your key}
 ```
 
+# Running pose/main,py
+python -m pose.main --bs 32 --epochs 3 --no-log
+```
+
 Current state of the project:
 
  - We have the Faster R-CNN but it has not trained it
@@ -74,3 +78,5 @@ TODO:
  - Add object id as another input to the classifier of the pose estimator
 
  - Normalize the images with std and mean???
+
+ - Add that we separate the checkpoints for Faster R-CNN and EfficientNet

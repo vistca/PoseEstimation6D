@@ -26,16 +26,18 @@ class CustomEfficientNet(nn.Module):
         )
 
     def forward(self, x):
-        img = x[0]
-        bbox = x[1]
+        
+        imgs = torch.cat([sample["rgb"] for sample in x], dim=0)
+        bboxs = torch.cat([sample["bbox"] for sample in x], dim=0)
+
         #id = x[2] # apply as categorical instead of continuous varable
 
-        x_center = bbox[:, 0] + 0.5 * bbox[:, 2]
-        y_center = bbox[:, 1] + 0.5 * bbox[:, 3]
-        height = bbox[:, 3]
-        width = bbox[:, 2]
+        x_center = bboxs[:, 0] + 0.5 * bboxs[:, 2]
+        y_center = bboxs[:, 1] + 0.5 * bboxs[:, 3]
+        height = bboxs[:, 3]
+        width = bboxs[:, 2]
 
-        img_features = self.features(img)
+        img_features = self.features(imgs)
         img_features = self.avgpool(img_features)
         img_features = self.flatten(img_features)
 
@@ -46,7 +48,7 @@ class CustomEfficientNet(nn.Module):
 
         return self.regressor(features)
 
-CustomEfficientNet()
+
 
 
 

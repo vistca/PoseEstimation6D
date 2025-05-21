@@ -12,73 +12,64 @@ class Trainer():
         self.optimizer = optimizer
         self.wandb_instance = wandb_instance
         self.epochs = epochs
+        self.loss_fn = torch.nn.MSELoss()
+        self.scaler = GradScaler()
+
+
 
     def train_one_epoch(self, train_loader, device):
 
-        #metric = MeanAveragePrecision()
-
-        self.model.train()
+        self.model.train() # Maybe unnecessary?
         total_loss = 0.0
         nr_batches = 0
 
-        loss_classifier = 0
-        loss_box_reg = 0
-        loss_objectness = 0
-        loss_rpn_box_reg = 0
         timings = {"DL update iter" : [], "load" : [], "fit/loss" : [], "backprop" : []}
 
         progress_bar = tqdm(train_loader, desc="Training", ncols=100)
         start = time.perf_counter()
+
         for batch_idx, batch in enumerate(progress_bar):
             end = time.perf_counter()
             self.model.train()
             timings["DL update iter"].append(end - start)
             
             start = time.perf_counter()
-            images = batch["rgb"].to(device)
-            targets = []
+            nr_datapoints = batch["rgb"].shape[0]
+            targets = torch.empty(nr_datapoints, 12, device=device)
+            inputs = []
 
             # We must be able to improve/remove this loop
-            for i in range(images.shape[0]):
-                target = {}
-                target["boxes"] = batch["bbox"][i].to(device).unsqueeze(0)  # Add batch dimension
-                target["labels"] = batch["obj_id"][i].to(device).long().unsqueeze(0)  # Add batch dimension
-                targets.append(target)
+            for i in range(nr_datapoints):
+                translation = batch["translation"][i].to(device).unsqueeze(0) # Add batch dimension
+                rotation = batch["rotation"][i].to(device).flatten().unsqueeze(0) # Add batch dimension    
+                target = torch.cat((translation, rotation), dim=1)
+                targets[i] = target            
+            
+            for i in range(nr_datapoints):
+                input = {}
+                input["rgb"] = batch["rgb"][i].to(device).unsqueeze(0) # Add batch dimension
+                input["bbox"] = batch["bbox"][i].to(device).unsqueeze(0)  # Add batch dimension
+                input["labels"] = batch["obj_id"][i].to(device).long().unsqueeze(0)  # Add batch dimension
+                inputs.append(input)
             
             end = time.perf_counter()
             timings["load"].append(end - start)
 
             start = time.perf_counter()
+            # TODO: Why cuda, change call to self.model to instead calculate custom mse loss
             # Using mixed precision training
             if device.type == 'cuda':
                 with autocast(device.type):
-                    loss_dict = self.model(images, targets)
+                    preds = self.model(inputs)  
+                    loss = self.loss_fn(preds, targets)
             else:
-                loss_dict = self.model(images, targets)
+                preds = self.model(inputs)
+                loss = self.loss_fn(preds, targets)
             
+
             self.model.eval()
-            outputs = self.model(images)
-            preds = []
-            gts = []
-            for pred, tgt in zip(outputs, targets):
-                preds.append({
-                    "boxes": pred["boxes"].cpu(),
-                    "scores": pred["scores"].cpu(),
-                    "labels": pred["labels"].cpu()
-                })
-                gts.append({
-                    "boxes": tgt["boxes"].cpu(),
-                    "labels": tgt["labels"].cpu()
-                })
 
-            #metric.update(preds, gts)
-              
-
-            loss_classifier += loss_dict["loss_classifier"].item()
-            loss_box_reg += loss_dict["loss_box_reg"].item()
-            loss_objectness += loss_dict["loss_objectness"].item()
-            loss_rpn_box_reg += loss_dict["loss_rpn_box_reg"].item()
-            loss = sum(loss for loss in loss_dict.values())
+            
 
             end = time.perf_counter()
             timings["fit/loss"].append(end - start)
@@ -86,10 +77,9 @@ class Trainer():
             start = time.perf_counter()
             self.optimizer.zero_grad(set_to_none=True)
 
-            scaler = GradScaler()
-            scaler.scale(loss).backward()
-            scaler.step(self.optimizer)
-            scaler.update()
+            self.scaler.scale(loss).backward()
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
 
             end = time.perf_counter()
             timings["backprop"].append(end - start)
@@ -99,20 +89,13 @@ class Trainer():
 
             nr_batches += 1
 
-            progress_bar.set_postfix(total=total_loss/nr_batches, class_loss=loss_classifier/nr_batches, box_reg=loss_box_reg/nr_batches)
-
-        # Inference for mAP
-
-        #val_metrics = metric.compute()
+            progress_bar.set_postfix(total=total_loss/nr_batches)
 
         avg_loss = total_loss / len(train_loader)
 
 
-        self.wandb_instance.log_metric({"Training total_loss" : avg_loss,
-                                        "Training class_loss" : loss_classifier / len(train_loader),
-                                        "Training box_loss" : loss_box_reg / len(train_loader),
-                                        "Training background_loss" : loss_objectness / len(train_loader),
-                                        "Training rpn_box_loss" : loss_rpn_box_reg / len(train_loader)
+        self.wandb_instance.log_metric({
+                                        "Training total_loss" : avg_loss,
                                         })
         
 
@@ -123,5 +106,5 @@ class Trainer():
                                         "Time backprop" : statistics.median(timings["backprop"]),
                                     })
     
-        return avg_loss, val_metrics["map"].item()
+        return avg_loss
     

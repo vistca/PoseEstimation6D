@@ -3,12 +3,12 @@ import argparse
 import yaml
 import torch
 from utils.optimizer_loader import OptimLoader
-from pose.models.efficientNet import EfficientNet
+from pose.models.efficientNet import CustomEfficientNet
 from timm.data.loader import MultiEpochsDataLoader
 from prep_data import download_data, yaml_to_json
-from data.faster_dataset import FasterDataset
+from pose.pose_dataset import PoseDataset
 import os
-from train_test_handler import TTH
+from pose.train_test_handler import TTH
 
 def run_program(parser):
     parsed_args = parser.parse_args()
@@ -30,8 +30,8 @@ def run_program(parser):
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
-    efficient_net = EfficientNet()
-    model = efficient_net.get_model().to(device)
+    efficient_net = CustomEfficientNet()
+    model = efficient_net.to(device)
     model_params = [p for p in model.parameters() if p.requires_grad]
     
     optimloader = OptimLoader(parsed_args.optimizer, model_params, parsed_args.lr)
@@ -51,9 +51,9 @@ def run_program(parser):
                         }
 
     
-    train_dataset = FasterDataset(dataset_root, split_percentage, split="train")
-    test_dataset = FasterDataset(dataset_root, split_percentage, split="test")
-    val_dataset = FasterDataset(dataset_root, split_percentage, split="val")
+    train_dataset = PoseDataset(dataset_root, split_percentage, split="train")
+    test_dataset = PoseDataset(dataset_root, split_percentage, split="test")
+    val_dataset = PoseDataset(dataset_root, split_percentage, split="val")
     
     train_loader = MultiEpochsDataLoader(train_dataset, batch_size=parsed_args.bs, 
                                          shuffle=True, num_workers=parsed_args.w)
@@ -76,7 +76,7 @@ def add_runtime_args(parser):
                     help='The learning rate', default=config_dict['learning_rate'])
     
     parser.add_argument('--bs', type=int,
-                    help='The bastch size', default=config_dict['batch_size'])
+                    help='The batch size', default=config_dict['batch_size'])
     
     parser.add_argument('--epochs', type=int,
                     help='The number of epochs', default=config_dict['epochs'])
