@@ -3,7 +3,7 @@ import argparse
 import yaml
 import torch
 from utils.optimizer_loader import OptimLoader
-from pose.models.efficientNet import EfficientNet
+from pose.models.efficientNet import CustomEfficientNet
 from timm.data.loader import MultiEpochsDataLoader
 from prep_data import download_data, yaml_to_json
 from pose_dataset import PoseDataset
@@ -30,7 +30,7 @@ def run_program(parser):
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
-    efficient_net = EfficientNet()
+    efficient_net = CustomEfficientNet()
     model = efficient_net.get_model().to(device)
     model_params = [p for p in model.parameters() if p.requires_grad]
     

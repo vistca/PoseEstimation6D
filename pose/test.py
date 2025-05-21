@@ -22,14 +22,26 @@ class Tester:
 
         with torch.no_grad():
             for batch_id, batch in enumerate(progress_bar):
-                images = batch["rgb"].to(device)
+
+                nr_datapoints = batch["rgb"].shape[0]
                 targets = []
-                for i in range(images.shape[0]):
-                    target = {
-                        "boxes": batch["bbox"][i].to(device).unsqueeze(0),
-                        "labels": batch["obj_id"][i].to(device).long().unsqueeze(0)
-                    }
+                inputs = []
+
+                # We must be able to improve/remove this loop
+                for i in range(nr_datapoints):
+                    
+                    translation = batch["translation"][i].to(device).unsqueeze(0) # Add batch dimension
+                    rotation = batch["rotation"][i].to(device).unsqueeze(0) # Add batch dimension                
+                    target = torch.cat((translation, rotation), dim=0)
+
                     targets.append(target)
+                
+                for i in range(nr_datapoints):
+                    input = {}
+                    input["rgb"] = batch["rgb"][i].to(device).unsqueeze(0) # Add batch dimension
+                    input["boxes"] = batch["bbox"][i].to(device).unsqueeze(0)  # Add batch dimension
+                    input["labels"] = batch["obj_id"][i].to(device).long().unsqueeze(0)  # Add batch dimension
+                    inputs.append(input)
 
                 # Forward pass
 
@@ -39,37 +51,15 @@ class Tester:
                 # doing it like this takes forever, might need to check this and update it accordingly
 
                 self.model.train()
-                loss_dict = self.model(images, targets)
+                preds = self.model(inputs)
                 self.model.eval()
 
                 #print(type(loss_dict), loss_dict)  # Debugging output
-                loss = sum(loss for loss in loss_dict.values())
+                loss = self.loss_fn(preds, targets)
 
-                val_loss += loss.item()
-                loss_classifier += loss_dict["loss_classifier"].item()
-                loss_box_reg += loss_dict["loss_box_reg"].item()
-                loss_objectness += loss_dict["loss_objectness"].item()
-                loss_rpn_box_reg += loss_dict["loss_rpn_box_reg"].item()
+                val_loss += loss
 
-                # Inference for mAP
-                outputs = self.model(images)
-
-                preds = []
-                gts = []
-                for pred, tgt in zip(outputs, targets):
-                    preds.append({
-                        "boxes": pred["boxes"].cpu(),
-                        "scores": pred["scores"].cpu(),
-                        "labels": pred["labels"].cpu()
-                    })
-                    gts.append({
-                        "boxes": tgt["boxes"].cpu(),
-                        "labels": tgt["labels"].cpu()
-                    })
-
-                progress_bar.set_postfix(total=val_loss/(batch_id + 1), 
-                                         class_loss=loss_classifier/(batch_id + 1), 
-                                         box_reg=loss_box_reg/(batch_id + 1))
+                progress_bar.set_postfix(total=val_loss/(batch_id + 1))
 
         avg_loss = val_loss / len(dataloader)
 
