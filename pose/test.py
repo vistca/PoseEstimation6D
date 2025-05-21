@@ -24,7 +24,7 @@ class Tester():
             for batch_id, batch in enumerate(progress_bar):
 
                 nr_datapoints = batch["rgb"].shape[0]
-                targets = torch.empty(nr_datapoints, 12)
+                targets = torch.empty(nr_datapoints, 12, device=device)
                 inputs = []
 
                 # We must be able to improve/remove this loop                

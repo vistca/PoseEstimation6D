@@ -2,7 +2,7 @@ from tqdm import tqdm
 import time
 import statistics
 import torch
-from torch.cuda.amp import autocast, GradScaler
+from torch.amp import autocast, GradScaler
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
 
 class Trainer():
@@ -13,6 +13,8 @@ class Trainer():
         self.wandb_instance = wandb_instance
         self.epochs = epochs
         self.loss_fn = torch.nn.MSELoss()
+        self.scaler = GradScaler()
+
 
 
     def train_one_epoch(self, train_loader, device):
@@ -25,6 +27,7 @@ class Trainer():
 
         progress_bar = tqdm(train_loader, desc="Training", ncols=100)
         start = time.perf_counter()
+
         for batch_idx, batch in enumerate(progress_bar):
             end = time.perf_counter()
             self.model.train()
@@ -32,7 +35,7 @@ class Trainer():
             
             start = time.perf_counter()
             nr_datapoints = batch["rgb"].shape[0]
-            targets = torch.empty(nr_datapoints, 12)
+            targets = torch.empty(nr_datapoints, 12, device=device)
             inputs = []
 
             # We must be able to improve/remove this loop
@@ -58,13 +61,15 @@ class Trainer():
             if device.type == 'cuda':
                 with autocast(device.type):
                     preds = self.model(inputs)  
+                    loss = self.loss_fn(preds, targets)
             else:
                 preds = self.model(inputs)
+                loss = self.loss_fn(preds, targets)
             
 
             self.model.eval()
+
             
-            loss = self.loss_fn(preds, targets)
 
             end = time.perf_counter()
             timings["fit/loss"].append(end - start)
@@ -72,10 +77,9 @@ class Trainer():
             start = time.perf_counter()
             self.optimizer.zero_grad(set_to_none=True)
 
-            scaler = GradScaler()
-            scaler.scale(loss).backward()
-            scaler.step(self.optimizer)
-            scaler.update()
+            self.scaler.scale(loss).backward()
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
 
             end = time.perf_counter()
             timings["backprop"].append(end - start)
