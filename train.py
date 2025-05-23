@@ -7,10 +7,11 @@ from torchmetrics.detection.mean_ap import MeanAveragePrecision
 
 class Trainer():
 
-    def __init__(self, model, optimizer, wandb_instance):
+    def __init__(self, model, optimizer, wandb_instance, scheduler):
         self.model = model
         self.optimizer = optimizer
         self.wandb_instance = wandb_instance
+        self.scheduler = scheduler
 
     def train_one_epoch(self, train_loader, device):
 
@@ -85,10 +86,16 @@ class Trainer():
 
             start = time.perf_counter()
             
-
+            # Added parts so we only decrease the learning rate if the loss was not scaled.
+            # If the loss was scaled then it isn't any reason to reduce it since it will
+            # not be representative of the actual decrease
             scaler.scale(loss).backward()
+            scaled_factor = scaler.get_scale()
             scaler.step(self.optimizer)
             scaler.update()
+            if not scaled_factor <= scaler.get_scale() and self.scheduler:
+                self.scheduler.step()
+                self.wandb_instance.log_metric({"Learning rate after batch" : self.scheduler._last_lr})
 
             end = time.perf_counter()
             timings["backprop"].append(end - start)
