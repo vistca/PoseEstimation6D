@@ -4,7 +4,7 @@ class ScheduleLoader():
         
     def __init__(self, optimizer, scheduler_name):
         if scheduler_name == "CosineAnnealingWarmRestarts":
-            self.scheduler = CosineAnnealingWarmRestarts(optimizer)
+            self.scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=1000)
 
         elif scheduler_name == "ReduceLROnPlateau":
             self.scheduler = ReduceLROnPlateau(optimizer, patience=10)
