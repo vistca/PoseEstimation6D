@@ -8,9 +8,8 @@ class ScheduleLoader():
 
         elif scheduler_name == "ReduceLROnPlateau":
             self.scheduler = ReduceLROnPlateau(optimizer, patience=10)
-        
         else:
-            self.scheduler == None
+            self.scheduler = None
 
     def get_scheduler(self):
         return self.scheduler
