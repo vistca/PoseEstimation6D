@@ -15,7 +15,7 @@ def project_to_2d(coord):
     x = (K[0, 0] * coord[0] / coord[2]) + K[0, 2]
     y = (K[1, 1] * coord[1] / coord[2]) + K[1, 2]
 
-    return [x, y]
+    return (x, y)
 
 
 def model_to_edges(model):
@@ -63,13 +63,32 @@ def model_to_edges(model):
     return edges
 
 
+def project_edges(edges):
+    proj_edges = []
+    for edge in edges:
+        point1 = project_to_2d(edge[0])
+        point2 = project_to_2d(edge[1])
+        proj_edges.append([point1, point2])
+    return proj_edges
+
+
+def transpose_edges(edges, increment_coord):
+    for i in range(len(edges)):
+        for j in range(2):
+            edges[i][j] += increment_coord
+
+
+def rotat_edges(edges, rotation_matrix):
+    for i in range(len(edges)):
+        for j in range(2):
+            edges[i][j] = rotation_matrix @ edges[i][j]
 
 
 
-obj_id = "8"
+obj_id = "14"
 dir = "0" * (2 - len(obj_id)) + obj_id
 
-nr = "1156"
+nr = "1170"
 img_nr = "0" * (4 - len(nr)) + nr
 
 img_path = "./datasets/Linemod_preprocessed/data/" + dir + "/rgb/"
@@ -93,34 +112,20 @@ coord = pose_data[nr][0]["cam_t_m2c"] # 3d coordinates
 rotation = pose_data[nr][0]["cam_R_m2c"] # rotation matrix
 
 coord = np.array(coord).T
-rotation = np.array(rotation).reshape(3, 3)
-
-
+rotation_matrix = np.array(rotation).reshape(3, 3)
 
 model = models[obj_id]
-print(model)
+edges = model_to_edges(model)
 
-print(model_to_edges(model))
+rotat_edges(edges, rotation_matrix)
+transpose_edges(edges, coord)
+proj_edges = project_edges(edges)
 
-
-
-x, y = project_to_2d(coord)
-
-#print(f"(x, y) = ({x}, {y})")
-
-radius = 2 
-dot_color = "red"
-
-x0 = x - radius
-y0 = y - radius
-x1 = x + radius
-y1 = y + radius
 
 draw = ImageDraw.Draw(img)
-draw.ellipse((x0, y0, x1, y1), fill=dot_color)
+for edge in proj_edges:
+        draw.line(edge, fill="#FF1AF4", width=1)
 
-#print(f"[x, y, z] = {coord}")
 
-
-#img.show()
+img.show()
 
