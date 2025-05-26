@@ -11,8 +11,8 @@ class TTH():
         self.optimizer = optimizer
         self.wandb = wandb_instance
         self.epochs = epochs
-        self.trainer = Trainer(model, optimizer, wandb_instance, epochs)
-        self.tester = Tester(model, wandb_instance)
+        self.trainer = Trainer(model, optimizer, epochs)
+        self.tester = Tester(model)
 
     def save_model(self, path, prev_losses, curr_loss):
         if curr_loss < min(prev_losses):
@@ -31,11 +31,16 @@ class TTH():
             
             print(f"\nStarting epoch {epoch+1}/{self.epochs}")
 
-            train_avg_loss = self.trainer.train_one_epoch(train_dl, device)
+            train_result = self.trainer.train_one_epoch(train_dl, device)
+            train_avg_loss = train_result["Training total_loss"]
             losses["train_loss"].append(train_avg_loss)
 
-            val_avg_loss = self.tester.validate(val_dl, device, 'Validation')
-            losses["val_loss"].append(train_avg_loss)
+            val_result = self.tester.validate(val_dl, device, 'Validation')
+            val_avg_loss = val_result["Validation total_loss"]
+            losses["val_loss"].append(val_avg_loss)
+
+            result_dict= {**train_result, **val_result}
+            self.wandb.log_metric(result_dict)
             
             end = time.perf_counter()
             time_diff = end - start
@@ -56,8 +61,12 @@ class TTH():
                     "---------------------------------- \n" \
                    )
             
-        test_loss = self.tester.validate(test_dl, device, 'Test')
-        
+        test_result = self.tester.validate(test_dl, device, 'Test')
+        test_loss = test_result["Test total_loss"]
+        self.wandb.log_metric({
+            "Test total_loss": test_loss,
+        })
+
         print(f"\nTest statistics \n" \
                    "---------------------------------- \n" \
                    f"Average test loss: {test_loss:.4f} \n" \
