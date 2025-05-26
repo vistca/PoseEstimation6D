@@ -38,7 +38,7 @@ class Tester():
                     input = {}
                     input["rgb"] = batch["rgb"][i].to(device).unsqueeze(0) # Add batch dimension
                     input["bbox"] = batch["bbox"][i].to(device).unsqueeze(0)  # Add batch dimension
-                    input["labels"] = batch["obj_id"][i].to(device).long().unsqueeze(0)  # Add batch dimension
+                    input["obj_id"] = batch["obj_id"][i].to(device).long().unsqueeze(0)  # Add batch dimension
                     inputs.append(input)
 
                 # Forward pass
