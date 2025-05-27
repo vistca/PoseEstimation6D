@@ -12,7 +12,7 @@ import open3d as o3d
 from tqdm import tqdm
 
 class PoseDataset(Dataset):
-    def __init__(self, dataset_root, split_ratio, split='train', seed=42):
+    def __init__(self, dataset_root, split_ratio, dimensions, split='train', seed=42):
         """
         Args:
             dataset_root (str): Path to the dataset directory.
@@ -24,6 +24,7 @@ class PoseDataset(Dataset):
         self.split = split
         self.split_ratio = split_ratio
         self.seed = seed
+        self.dimensions = dimensions
 
         # Get list of all samples (folder_id, sample_id)
         self.samples = self.get_all_samples()
@@ -160,8 +161,7 @@ class PoseDataset(Dataset):
 
     def rgb_crop_img(self, rgb_img, b): # b is the bounding box for the image
         crop = rgb_img.crop((b[0], b[1], b[0]+b[2], b[1]+b[3]))
-        resize_format = (300, 300)
-        return crop.resize(resize_format)
+        return crop.resize(self.dimensions)
 
 
     def __len__(self):

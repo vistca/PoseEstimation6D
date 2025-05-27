@@ -7,8 +7,9 @@ class CustomResNet50(nn.Module):
     def __init__(self):
         super().__init__()
 
+        self.dimensions = (224,224)
+
         base_model = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
-        print(base_model)
 
         for param in base_model.parameters():
             param.requires_grad = False
@@ -28,6 +29,9 @@ class CustomResNet50(nn.Module):
             nn.Linear(256, 12)
         )
 
+    def get_dimension(self):
+        return self.dimensions
+
     def forward(self, x):
         imgs = torch.cat([sample["rgb"] for sample in x], dim=0)
         bbox = torch.cat([sample["bbox"] for sample in x], dim=0)
@@ -44,7 +48,3 @@ class CustomResNet50(nn.Module):
         features = torch.cat((img_features, bbox, id_feature), dim=1)
 
         return self.regressor(features)
-
-
-CustomResNet50()
-

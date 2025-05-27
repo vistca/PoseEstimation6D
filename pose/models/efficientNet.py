@@ -6,6 +6,8 @@ import torch.nn.functional as F
 class CustomEfficientNet(nn.Module):
     def __init__(self):
         super().__init__()
+        
+        self.dimensions = (300, 300)
 
         base_model = models.efficientnet_b3(weights=models.EfficientNet_B3_Weights.DEFAULT)
 
@@ -26,6 +28,9 @@ class CustomEfficientNet(nn.Module):
             nn.Linear(256, 12)
         )
 
+
+    def get_dimension(self):
+        return self.dimensions
 
 
     def forward(self, x):
