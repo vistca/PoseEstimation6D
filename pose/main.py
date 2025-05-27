@@ -1,3 +1,11 @@
+import sys
+import os
+
+# Get the path to the parent directory (i.e., project_root/)
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+# Add it to sys.path
+sys.path.insert(0, parent_dir)
+
 from utils.wandb_setup import WandbSetup
 import yaml
 import torch
