@@ -35,7 +35,7 @@ img.show()
 
 crop = img.crop((b[0], b[1], b[0]+b[2], b[1]+b[3]))
 
-resize_format = (224, 224)
+resize_format = (300, 300)
 crop = crop.resize(resize_format)
 
 end = time.perf_counter()

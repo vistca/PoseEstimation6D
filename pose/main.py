@@ -5,7 +5,7 @@ import torch
 from utils.optimizer_loader import OptimLoader
 from pose.models.efficientNet import CustomEfficientNet
 from timm.data.loader import MultiEpochsDataLoader
-from prep_data import download_data, yaml_to_json
+from prep_data import download_data, yaml_to_json, transfer_data
 from pose.pose_dataset import PoseDataset
 import os
 from pose.train_test_handler import TTH
@@ -19,6 +19,7 @@ def run_program(parser):
     if parsed_args.ld != "" and not os.path.exists(dataset_root):
         download_data(parsed_args.ld, parsed_args.data)
         yaml_to_json(parsed_args.data + "Linemod_preprocessed/data/")
+        transfer_data("./datasets/Linemod_preprocessed/models/", "models_info")
 
 
     if parsed_args.lm != "":

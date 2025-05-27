@@ -6,9 +6,8 @@ from torchmetrics.detection.mean_ap import MeanAveragePrecision
 
 class Tester():
 
-    def __init__(self, model, wandb_instance):
+    def __init__(self, model):
         self.model = model
-        self.wandb_instance = wandb_instance
         self.loss_fn = torch.nn.MSELoss()
 
 
@@ -38,7 +37,7 @@ class Tester():
                     input = {}
                     input["rgb"] = batch["rgb"][i].to(device).unsqueeze(0) # Add batch dimension
                     input["bbox"] = batch["bbox"][i].to(device).unsqueeze(0)  # Add batch dimension
-                    input["labels"] = batch["obj_id"][i].to(device).long().unsqueeze(0)  # Add batch dimension
+                    input["obj_id"] = batch["obj_id"][i].to(device).long().unsqueeze(0)  # Add batch dimension
                     inputs.append(input)
 
                 # Forward pass
@@ -60,11 +59,8 @@ class Tester():
                 progress_bar.set_postfix(total=val_loss/(batch_id + 1))
 
         avg_loss = val_loss / len(dataloader)
+        
+        result_dict = {f"{type} total_loss" : avg_loss}
 
-        # Log to wandb
-        self.wandb_instance.log_metric({
-            f"{type} total_loss": avg_loss,
-        })
-
-        return avg_loss
+        return result_dict
     
