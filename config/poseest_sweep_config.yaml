@@ -25,7 +25,7 @@ parameters:
 
   bs:
     distribution: categorical
-    values: [8, 16, 32]
+    values: [16, 32, 64]
 
   mod:
     distribution: categorical

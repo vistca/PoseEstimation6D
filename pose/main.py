@@ -48,7 +48,7 @@ def run_program(args):
     optimloader = OptimLoader(args.optimizer, model_params, args.lr)
     optimizer = optimloader.get_optimizer()
 
-    schedulerloader = ScheduleLoader(optimizer, args.scheduler)
+    schedulerloader = ScheduleLoader(optimizer, args.scheduler, args.bs, 9479)
     scheduler = schedulerloader.get_scheduler()
 
     trainer = Trainer(model, optimizer, scheduler)
