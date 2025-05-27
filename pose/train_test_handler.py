@@ -15,7 +15,7 @@ class TTH():
         self.tester = Tester(model)
 
     def save_model(self, path, prev_losses, curr_loss):
-        if curr_loss <= min(prev_losses):
+        if curr_loss < min(prev_losses):
             if os.path.exists(path):
                 os.remove(path)
             torch.save(self.model.state_dict(), 'checkpoints/'+ path + ".pt")
@@ -33,11 +33,11 @@ class TTH():
 
             train_result = self.trainer.train_one_epoch(train_dl, device)
             train_avg_loss = train_result["Training total_loss"]
-            losses["train_loss"].append(train_avg_loss)
+            
 
             val_result = self.tester.validate(val_dl, device, 'Validation')
             val_avg_loss = val_result["Validation total_loss"]
-            losses["val_loss"].append(val_avg_loss)
+            
 
             result_dict= {**train_result, **val_result}
             self.wandb.log_metric(result_dict)
@@ -51,6 +51,9 @@ class TTH():
                 save_status = self.save_model(save_path, 
                                               losses["val_loss"],
                                               val_avg_loss)
+            
+            losses["train_loss"].append(train_avg_loss)
+            losses["val_loss"].append(val_avg_loss)
 
             print(f"Epoch statistics for epoch {epoch+1}/{self.epochs} \n" \
                    "---------------------------------- \n" \
