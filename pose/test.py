@@ -113,7 +113,9 @@ class Tester():
                 val_loss += loss
 
                 progress_bar.set_postfix(total=val_loss/(batch_id + 1))
-                
+
+                break
+
         avg_loss = val_loss / len(dataloader)
         avg_add_total = add_total[1] / add_total[0]
         for k,v in add_objects.items():
@@ -122,6 +124,7 @@ class Tester():
         print(f"Total average ADD: {avg_add_total}")
         
         return {
-                f"{type} total_loss" : avg_loss
+                f"{type} total_loss" : avg_loss,
+                f"{type} total ADD" : avg_add_total
             }, avg_loss
     

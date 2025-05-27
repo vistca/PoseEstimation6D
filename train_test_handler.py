@@ -73,6 +73,8 @@ class TTH():
         if run_test:
 
             test_output, _ = self.tester.validate(test_dl, device, 'Test')
+
+            self.wandb.log_metric(test_output)
             
             self.print_info(
                     f"\nTest statistics", 
