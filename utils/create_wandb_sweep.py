@@ -8,7 +8,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--project', type=str, help='project in which the sweep is to be located', default="PoseEstimation6D")
     parser.add_argument('--wb', type=str, help='wb key', default="")
-    parser.add_argument('--sf', type=str, help='file location of sweep', default="config/phase2_sweep_config.yaml")
+    parser.add_argument('--sf', type=str, help='file location of sweep', default="phase2_sweep_config")
     args = parser.parse_args()
     
     
@@ -28,7 +28,7 @@ if __name__ == "__main__":
     
 
     try:
-        with open(args.sf) as f:
+        with open("config/" + args.sf + ".yaml") as f:
            sweep_conf = yaml.safe_load(f)
     except:
         raise("File path is unvalid")

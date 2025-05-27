@@ -16,22 +16,23 @@ from utils.runtime_args import add_runtime_args
 def run_program(args):
     dataset_root = args.data + "/Linemod_preprocessed"
 
-    wandb_instance = WandbSetup("testround", args, "PoseEstimation6D")
+    wandb_instance = WandbSetup(args, "PoseEstimation6D")
 
     if args.ld != "" and not os.path.exists(dataset_root):
         download_data(args.ld, args.data)
         yaml_to_json(args.data + "Linemod_preprocessed/data/")
+    
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     model = FasterRCNN(args.tr, args.fm)
 
     if args.lm != "":
         try:
-            model.get_model().load_state_dict(torch.load('checkpoints/'+args.lm + ".pt", weights_only=True))
+            model.get_model().load_state_dict(torch.load('checkpoints/'+args.lm + ".pt", weights_only=True, map_location=device.type))
             print("Model loaded")
         except:
              raise("Could not load the model, might be due to missmatching models or something else")
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.get_model().to(device)
     model_params = [p for p in model.parameters() if p.requires_grad]
 
@@ -76,7 +77,7 @@ def run_program(args):
 
 
     tth.train_test_val_model(train_loader, val_loader, test_loader,
-                             device, args.sm)
+                             device, args.sm, args.test)
 
 
 if __name__ == "__main__":

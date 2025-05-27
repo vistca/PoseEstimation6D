@@ -1,10 +1,7 @@
-from train import Trainer
-from test import Tester
 import time
 import datetime
 import torch
 import os
-from torch.optim.lr_scheduler import ExponentialLR
 
 class TTH():
     def __init__(self, model, optimizer, wandb_instance, epochs, trainer, tester):
@@ -15,8 +12,9 @@ class TTH():
         self.trainer = trainer
         self.tester = tester
 
-    def save_model(self, path, prev_losses, curr_loss):
-        if curr_loss <= min(prev_losses):
+    def save_model(self, path, best_comp_metric, curr_loss):
+        if curr_loss <= best_comp_metric or not best_comp_metric:
+            best_comp_metric = curr_loss
             if os.path.exists(path):
                 os.remove(path)
             torch.save(self.model.state_dict(), 'checkpoints/'+ path + ".pt")
@@ -31,10 +29,10 @@ class TTH():
         print("----------------------------------\n")
 
 
-    def train_test_val_model(self, train_dl, val_dl, test_dl, device, save_path):
+    def train_test_val_model(self, train_dl, val_dl, test_dl, device, save_path, run_test):
         start = time.perf_counter()
 
-        val_comp = []
+        best_comp_metric = None
 
         for epoch in range(self.epochs):
             
@@ -43,7 +41,6 @@ class TTH():
             train_output = self.trainer.train_one_epoch(train_dl, device)
 
             val_output, comp_metric = self.tester.validate(val_dl, device, 'Validation')
-            val_comp.append(comp_metric)
             
             end = time.perf_counter()
             time_diff = end - start
@@ -52,7 +49,7 @@ class TTH():
             save_status = "Unapplicable"
             if save_path != "":
                 save_status = self.save_model(save_path, 
-                                              val_comp,
+                                              best_comp_metric,
                                               comp_metric)
 
 
@@ -68,9 +65,13 @@ class TTH():
                 train_output
             )   
 
-        test_output, _ = self.tester.validate(test_dl, device, 'Test')
-        
-        self.print_info(
-                f"\nTest statistics", 
-                test_output
-            )
+        self.wandb.log_metric({"Best validation metric" : best_comp_metric})
+
+        if run_test:
+
+            test_output, _ = self.tester.validate(test_dl, device, 'Test')
+            
+            self.print_info(
+                    f"\nTest statistics", 
+                    test_output
+                )
