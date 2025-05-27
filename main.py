@@ -16,7 +16,7 @@ from utils.runtime_args import add_runtime_args
 def run_program(args):
     dataset_root = args.data + "/Linemod_preprocessed"
 
-    wandb_instance = WandbSetup(args, "PoseEstimation6D")
+    wandb_instance = WandbSetup(args, args.project)
 
     if args.ld != "" and not os.path.exists(dataset_root):
         download_data(args.ld, args.data)

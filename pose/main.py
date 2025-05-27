@@ -1,5 +1,4 @@
 from utils.wandb_setup import WandbSetup
-import argparse
 import yaml
 import torch
 from utils.optimizer_loader import OptimLoader
