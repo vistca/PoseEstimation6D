@@ -78,7 +78,7 @@ def transpose_edges(edges, increment_coord):
             edges[i][j] += increment_coord
 
 
-def rotat_edges(edges, rotation_matrix):
+def rotate_edges(edges, rotation_matrix):
     for i in range(len(edges)):
         for j in range(2):
             edges[i][j] = rotation_matrix @ edges[i][j]
@@ -117,7 +117,7 @@ rotation_matrix = np.array(rotation).reshape(3, 3)
 model = models[obj_id]
 edges = model_to_edges(model)
 
-rotat_edges(edges, rotation_matrix)
+rotate_edges(edges, rotation_matrix)
 transpose_edges(edges, coord)
 proj_edges = project_edges(edges)
 
