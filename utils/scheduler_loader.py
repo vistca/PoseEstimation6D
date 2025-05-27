@@ -3,6 +3,7 @@ from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, ReduceLROnPlat
 class ScheduleLoader(): 
         
     def __init__(self, optimizer, scheduler_name):
+        self.name = scheduler_name
         if scheduler_name == "CosineAnnealingWarmRestarts":
             self.scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=1000)
 

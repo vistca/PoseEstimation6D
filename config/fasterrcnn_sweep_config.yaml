@@ -1,0 +1,32 @@
+program: main.py
+method: random
+
+metric:
+  name: Best validation metric
+  goal: minimize
+
+parameters:
+
+  lr:
+    distribution: categorical
+    values: [0.01, 0.001, 0.0001]
+
+  optimizer:
+    distribution: categorical
+    values: ["Adam", "AdamW", "SGD", "RMSprop", "Adagrad"]
+  
+  scheduler:
+    distribution: categorical
+    values: ["CosineAnnealingWarmRestarts", "ReduceLROnPlateau", "None"]
+  
+  epochs:
+    value: 1
+
+  bs:
+    distribution: categorical
+    values: [4, 8, 16, 32]
+
+  tr:
+    distribution: int_uniform
+    min: 0
+    max: 5

@@ -3,16 +3,15 @@ import time
 import statistics
 import torch
 from torch.amp import autocast, GradScaler
-from torchmetrics.detection.mean_ap import MeanAveragePrecision
 
 class Trainer():
 
-    def __init__(self, model, optimizer, epochs):
+    def __init__(self, model, optimizer, scheduler):
         self.model = model
         self.optimizer = optimizer
-        self.epochs = epochs
         self.loss_fn = torch.nn.MSELoss()
         self.scaler = GradScaler()
+        self.scheduler = scheduler
 
 
 
@@ -27,7 +26,7 @@ class Trainer():
         progress_bar = tqdm(train_loader, desc="Training", ncols=100)
         start = time.perf_counter()
 
-        for batch_idx, batch in enumerate(progress_bar):
+        for batch_id, batch in enumerate(progress_bar):
             end = time.perf_counter()
             self.model.train()
             timings["DL update iter"].append(end - start)
@@ -77,8 +76,16 @@ class Trainer():
             self.optimizer.zero_grad(set_to_none=True)
 
             self.scaler.scale(loss).backward()
+            scaled_factor = self.scaler.get_scale()
             self.scaler.step(self.optimizer)
             self.scaler.update()
+            if not scaled_factor <= self.scaler.get_scale() and self.scheduler:
+                if self.scheduler.__class__.__name__ == "ReduceLROnPlateau":
+                    self.scheduler.step(loss)
+                else:
+                    self.scheduler.step()
+                #self.wandb_instance.log_metric({"Learning rate after batch" : self.scheduler._last_lr})
+
 
             end = time.perf_counter()
             timings["backprop"].append(end - start)
@@ -90,14 +97,14 @@ class Trainer():
 
             progress_bar.set_postfix(total=total_loss/nr_batches)
 
-        avg_loss = total_loss / len(train_loader)
 
-        result_dict = {}
-        result_dict["Training total_loss"] = avg_loss
-        result_dict["DL update iter"] = statistics.median(timings["DL update iter"]),
-        result_dict["Time load_data"] = statistics.median(timings["load"]),
-        result_dict["Time fit/calc_loss"] = statistics.median(timings["fit/loss"]),
-        result_dict["Time backprop"] = statistics.median(timings["backprop"]),
+        avg_loss = total_loss / len(train_loader)
   
-        return result_dict #avg_loss
+        return {
+            "Training total_loss" : avg_loss,
+            "DL update iter" : statistics.median(timings["DL update iter"]),
+            "Time load_data" : statistics.median(timings["load"]),
+            "Time fit/calc_loss" : statistics.median(timings["fit/loss"]),
+            "Time backprop" : statistics.median(timings["backprop"])
+        }
     
