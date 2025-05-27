@@ -3,14 +3,12 @@ import time
 import statistics
 import torch
 from torch.amp import autocast, GradScaler
-from torchmetrics.detection.mean_ap import MeanAveragePrecision
 
 class Trainer():
 
-    def __init__(self, model, optimizer, epochs):
+    def __init__(self, model, optimizer):
         self.model = model
         self.optimizer = optimizer
-        self.epochs = epochs
         self.loss_fn = torch.nn.MSELoss()
         self.scaler = GradScaler()
 
@@ -27,7 +25,7 @@ class Trainer():
         progress_bar = tqdm(train_loader, desc="Training", ncols=100)
         start = time.perf_counter()
 
-        for batch_idx, batch in enumerate(progress_bar):
+        for batch_id, batch in enumerate(progress_bar):
             end = time.perf_counter()
             self.model.train()
             timings["DL update iter"].append(end - start)
@@ -90,14 +88,16 @@ class Trainer():
 
             progress_bar.set_postfix(total=total_loss/nr_batches)
 
-        avg_loss = total_loss / len(train_loader)
+            if batch_id == 0:
+                break
 
-        result_dict = {}
-        result_dict["Training total_loss"] = avg_loss
-        result_dict["DL update iter"] = statistics.median(timings["DL update iter"]),
-        result_dict["Time load_data"] = statistics.median(timings["load"]),
-        result_dict["Time fit/calc_loss"] = statistics.median(timings["fit/loss"]),
-        result_dict["Time backprop"] = statistics.median(timings["backprop"]),
+        avg_loss = total_loss / len(train_loader)
   
-        return result_dict #avg_loss
+        return {
+            "Training total_loss" : avg_loss,
+            "DL update iter" : statistics.median(timings["DL update iter"]),
+            "Time load_data" : statistics.median(timings["load"]),
+            "Time fit/calc_loss" : statistics.median(timings["fit/loss"]),
+            "Time backprop" : statistics.median(timings["backprop"])
+        }
     

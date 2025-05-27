@@ -41,6 +41,7 @@ class TTH():
             train_output = self.trainer.train_one_epoch(train_dl, device)
 
             val_output, comp_metric = self.tester.validate(val_dl, device, 'Validation')
+            self.wandb.log_metric({**val_output, **train_output})
             
             end = time.perf_counter()
             time_diff = end - start
@@ -63,7 +64,9 @@ class TTH():
             self.print_info(
                 f"\nEpoch statistics for epoch {epoch+1}/{self.epochs}", 
                 train_output
-            )   
+            )
+
+            start = time.perf_counter()   
 
         self.wandb.log_metric({"Best validation metric" : best_comp_metric})
 

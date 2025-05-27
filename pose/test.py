@@ -58,9 +58,12 @@ class Tester():
 
                 progress_bar.set_postfix(total=val_loss/(batch_id + 1))
 
+
+                break
+
         avg_loss = val_loss / len(dataloader)
         
-        result_dict = {f"{type} total_loss" : avg_loss}
-
-        return result_dict
+        return {
+                f"{type} total_loss" : avg_loss
+            }, avg_loss
     

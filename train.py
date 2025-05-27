@@ -106,6 +106,7 @@ class Trainer():
             progress_bar.set_postfix(total=total_loss/(batch_id + 1), 
                                      class_loss=loss_classifier/(batch_id + 1), 
                                      box_reg=loss_box_reg/(batch_id + 1))
+            
 
         # Inference for mAP
 
@@ -114,23 +115,31 @@ class Trainer():
         avg_loss = total_loss / len(train_loader)
 
 
-        self.wandb_instance.log_metric({"Training total_loss" : avg_loss,
-                                        "Training class_loss" : loss_classifier / len(train_loader),
-                                        "Training box_loss" : loss_box_reg / len(train_loader),
-                                        "Training background_loss" : loss_objectness / len(train_loader),
-                                        "Training rpn_box_loss" : loss_rpn_box_reg / len(train_loader)
-                                        })
+        # self.wandb_instance.log_metric({"Training total_loss" : avg_loss,
+        #                                 "Training class_loss" : loss_classifier / len(train_loader),
+        #                                 "Training box_loss" : loss_box_reg / len(train_loader),
+        #                                 "Training background_loss" : loss_objectness / len(train_loader),
+        #                                 "Training rpn_box_loss" : loss_rpn_box_reg / len(train_loader)
+        #                                 })
         
 
-        self.wandb_instance.log_metric({
-                                        "DL update iter" : statistics.median(timings["DL update iter"]),
-                                        "Time load_data" : statistics.median(timings["load"]),
-                                        "Time fit/calc_loss" : statistics.median(timings["fit/loss"]),
-                                        "Time backprop" : statistics.median(timings["backprop"]),
-                                    })
+        # self.wandb_instance.log_metric({
+        #                                 "DL update iter" : statistics.median(timings["DL update iter"]),
+        #                                 "Time load_data" : statistics.median(timings["load"]),
+        #                                 "Time fit/calc_loss" : statistics.median(timings["fit/loss"]),
+        #                                 "Time backprop" : statistics.median(timings["backprop"]),
+        #                             })
     
         return {
             "Average training loss" : round(avg_loss, 4),
-            "Average training mAP" : 1 #round(train_avg_mAP, 4)
+            "Average training mAP" : 1,
+            "Training class_loss" : loss_classifier / len(train_loader),
+            "Training box_loss" : loss_box_reg / len(train_loader),
+            "Training background_loss" : loss_objectness / len(train_loader),
+            "Training rpn_box_loss" : loss_rpn_box_reg / len(train_loader),
+            "DL update iter" : statistics.median(timings["DL update iter"]),
+            "Time load_data" : statistics.median(timings["load"]),
+            "Time fit/calc_loss" : statistics.median(timings["fit/loss"]),
+            "Time backprop" : statistics.median(timings["backprop"]),
         }
     
