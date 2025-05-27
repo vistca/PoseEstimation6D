@@ -29,5 +29,5 @@ parameters:
 
   mod:
     distribution: categorical
-    value: ["res", "eff"]
+    values: ["res", "eff"]
 
