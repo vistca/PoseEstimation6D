@@ -4,23 +4,24 @@ import wandb
 import os
 
 class WandbSetup():
-    def __init__(self, name_of_round, parsed_args, project_name):
+    def __init__(self, name_of_round, args, project_name):
         os.environ["WANDB_SILENT"] = "true"
-        self.logging = parsed_args.log
+        self.logging = args.log
         
         if self.logging == True:
-            if parsed_args.wb == "":
+            if args.wb == "":
                 try:
                     file = open("wandb_api_key.txt").readlines()
                     for lines in file:
-                        parsed_args.wb = lines
+                        args.wb = lines
                 except:
                     raise("Login to wandb failed, a key was not provided")
             else:
                 try:
-                    wandb.login(key=parsed_args.wb)
+                    wandb.login(key=args.wb)
                 except:
                     raise("Login to wandb failed, provided key is invalid")
+                
             # Start a new wandb run to track this script.
             self.run = wandb.init(
                 # Set the wandb entity where your project will be logged (generally your team name).
@@ -30,11 +31,11 @@ class WandbSetup():
                 name = name_of_round,
                 # Track hyperparameters and run metadata.
                 config={
-                "backbone": parsed_args.backbone,
-                "head": parsed_args.head,
-                "learning rate" : parsed_args.lr,
-                "epochs" : parsed_args.epochs,
-                "batch size" : parsed_args.bs
+                "backbone": args.backbone,
+                "head": args.head,
+                "learning rate" : args.lr,
+                "epochs" : args.epochs,
+                "batch size" : args.bs
                 },  
             )
             print("Login complete")
@@ -63,15 +64,6 @@ class WandbSetup():
                 keys.append(key)
                 values.append(value)
 
-
-                # self.run.log({
-                #         main_key : wandb.plot.line( 
-                #         table=table,
-                #         x="epochs",
-                #         y="time"
-                #     )
-                # })
-
                 self.run.log({
                         main_key : wandb.plot.line_series( 
                         xs=[epoch],
@@ -81,17 +73,4 @@ class WandbSetup():
                         xname="Epochs"
                     )
                 })
-
-
-                # table: wandb.Table,
-                # x: str,
-                # y: str,
-                # stroke: str | None = None,
-                # title: str = "",
-                # split_table: bool = False,
                 
-
-
-
-            
-        

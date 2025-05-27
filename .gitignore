@@ -182,5 +182,7 @@ wandb/
 
 .conda
 6dvenv/
-.DS_Store
 datasets/
+*.pt
+.DS_Store
+.DS_Store
