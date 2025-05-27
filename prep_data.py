@@ -59,4 +59,5 @@ if __name__ == "__main__":
     args = get_runtime_args()
     download_data(args.gf, args.bf)
     yaml_to_json(args.f)
+    transfer_data("./datasets/Linemod_preprocessed/models/", "models_info")
     print("Data prep complete!")

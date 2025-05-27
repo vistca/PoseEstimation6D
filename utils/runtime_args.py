@@ -59,5 +59,11 @@ def add_runtime_args():
     parser.add_argument('--fm', type=str,
                         help='The name of the mode that is to be used', default="transform")
     
+    parser.add_argument('--test', type=bool,
+                        help='If we should test the final model or solely train', default=False)
+    
+    parser.add_argument('--project', type=str,
+                        help='the name of the project to be logged', default="PoseEstimation6D")
+    
     return parser.parse_args()
     
