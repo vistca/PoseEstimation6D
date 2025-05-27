@@ -8,7 +8,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--project', type=str, help='project in which the sweep is to be located', default="PoseEstimation6D")
     parser.add_argument('--wb', type=str, help='wb key', default="")
-    parser.add_argument('--sf', type=str, help='file location of sweep', default="phase2_sweep_config")
+    parser.add_argument('--sf', type=str, help='file location of sweep', default="fasterrcnn_sweep_config.yaml")
     args = parser.parse_args()
     
     

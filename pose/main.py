@@ -12,6 +12,7 @@ from train_test_handler import TTH
 from pose.train import Trainer
 from pose.test import Tester
 from utils.runtime_args import add_runtime_args
+from utils.scheduler_loader import ScheduleLoader
 
 def run_program(args):
     dataset_root = args.data + "/Linemod_preprocessed"
@@ -40,7 +41,10 @@ def run_program(args):
     optimloader = OptimLoader(args.optimizer, model_params, args.lr)
     optimizer = optimloader.get_optimizer()
 
-    trainer = Trainer(model, optimizer)
+    schedulerloader = ScheduleLoader(optimizer, args.scheduler)
+    scheduler = schedulerloader.get_scheduler()
+
+    trainer = Trainer(model, optimizer, scheduler)
     tester = Tester(model)
 
     tth = TTH(model,optimizer, 

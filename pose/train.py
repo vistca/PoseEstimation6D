@@ -6,11 +6,12 @@ from torch.amp import autocast, GradScaler
 
 class Trainer():
 
-    def __init__(self, model, optimizer):
+    def __init__(self, model, optimizer, scheduler):
         self.model = model
         self.optimizer = optimizer
         self.loss_fn = torch.nn.MSELoss()
         self.scaler = GradScaler()
+        self.scheduler = scheduler
 
 
 
@@ -75,8 +76,13 @@ class Trainer():
             self.optimizer.zero_grad(set_to_none=True)
 
             self.scaler.scale(loss).backward()
+            scaled_factor = self.scaler.get_scale()
             self.scaler.step(self.optimizer)
             self.scaler.update()
+            if not scaled_factor <= self.scaler.get_scale() and self.scheduler:
+                self.scheduler.step()
+                self.wandb_instance.log_metric({"Learning rate after batch" : self.scheduler._last_lr})
+
 
             end = time.perf_counter()
             timings["backprop"].append(end - start)
@@ -88,8 +94,6 @@ class Trainer():
 
             progress_bar.set_postfix(total=total_loss/nr_batches)
 
-            if batch_id == 0:
-                break
 
         avg_loss = total_loss / len(train_loader)
   

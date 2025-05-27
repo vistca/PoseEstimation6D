@@ -3,7 +3,7 @@ method: random
 
 metric:
   name: Best validation metric
-  goal: maximize
+  goal: minimize
 
 parameters:
 
