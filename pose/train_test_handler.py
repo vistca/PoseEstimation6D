@@ -15,7 +15,7 @@ class TTH():
         self.tester = Tester(model)
 
     def save_model(self, path, prev_losses, curr_loss):
-        if curr_loss < min(prev_losses):
+        if len(prev_losses) == 0 or curr_loss < min(prev_losses):
             if os.path.exists(path):
                 os.remove(path)
             torch.save(self.model.state_dict(), 'checkpoints/'+ path + ".pt")
