@@ -64,6 +64,6 @@ def add_runtime_args():
     
     parser.add_argument('--project', type=str,
                         help='the name of the project to be logged', default="PoseEstimation6D")
-
+    
     return parser.parse_args()
     

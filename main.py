@@ -23,11 +23,11 @@ def run_program(args):
         yaml_to_json(args.data + "Linemod_preprocessed/data/")
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
     model = FasterRCNN(args.tr, args.fm)
 
     if args.lm != "":
         try:
+
             model.get_model().load_state_dict(torch.load('checkpoints/'+args.lm + ".pt", weights_only=True, map_location=device.type))
             print("Model loaded")
         except:
