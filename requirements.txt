@@ -10,3 +10,4 @@ ultralytics
 timm
 torchmetrics
 pycocotools
+plyfile
