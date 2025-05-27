@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torchvision import models
+import torch.nn.functional as F
 
 class CustomEfficientNet(nn.Module):
     def __init__(self):
@@ -19,7 +20,7 @@ class CustomEfficientNet(nn.Module):
 
         self.regressor = nn.Sequential(
             nn.Dropout(p=0.3),
-            nn.Linear(1536 + 4, 256),
+            nn.Linear(1536 + 4 + 15, 256),
             nn.ReLU(),
             nn.Dropout(p=0.2),
             nn.Linear(256, 12)
@@ -29,8 +30,8 @@ class CustomEfficientNet(nn.Module):
         
         imgs = torch.cat([sample["rgb"] for sample in x], dim=0)
         bboxs = torch.cat([sample["bbox"] for sample in x], dim=0)
-
-        #id = x[2] # apply as categorical instead of continuous varable
+        obj_id = torch.cat([sample["obj_id"] for sample in x], dim=0)
+        zero_based_id = obj_id - 1
 
         x_center = bboxs[:, 0] + 0.5 * bboxs[:, 2]
         y_center = bboxs[:, 1] + 0.5 * bboxs[:, 3]
@@ -41,10 +42,12 @@ class CustomEfficientNet(nn.Module):
         img_features = self.avgpool(img_features)
         img_features = self.flatten(img_features)
 
-        extra_features = [x_center, y_center, height, width]
-        extra_features = torch.stack(extra_features, dim=1)
+        bbox_features = [x_center, y_center, height, width]
+        bbox_features = torch.stack(bbox_features, dim=1)
 
-        features = torch.cat((img_features, extra_features), dim=1)
+        id_feature = F.one_hot(zero_based_id, num_classes=15).float()
+        
+        features = torch.cat((img_features, bbox_features, id_feature), dim=1)
 
         return self.regressor(features)
 

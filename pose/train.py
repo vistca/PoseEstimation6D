@@ -7,10 +7,9 @@ from torchmetrics.detection.mean_ap import MeanAveragePrecision
 
 class Trainer():
 
-    def __init__(self, model, optimizer, wandb_instance, epochs):
+    def __init__(self, model, optimizer, epochs):
         self.model = model
         self.optimizer = optimizer
-        self.wandb_instance = wandb_instance
         self.epochs = epochs
         self.loss_fn = torch.nn.MSELoss()
         self.scaler = GradScaler()
@@ -49,7 +48,7 @@ class Trainer():
                 input = {}
                 input["rgb"] = batch["rgb"][i].to(device).unsqueeze(0) # Add batch dimension
                 input["bbox"] = batch["bbox"][i].to(device).unsqueeze(0)  # Add batch dimension
-                input["labels"] = batch["obj_id"][i].to(device).long().unsqueeze(0)  # Add batch dimension
+                input["obj_id"] = batch["obj_id"][i].to(device).long().unsqueeze(0)  # Add batch dimension
                 inputs.append(input)
             
             end = time.perf_counter()
@@ -93,18 +92,12 @@ class Trainer():
 
         avg_loss = total_loss / len(train_loader)
 
-
-        self.wandb_instance.log_metric({
-                                        "Training total_loss" : avg_loss,
-                                        })
-        
-
-        self.wandb_instance.log_metric({
-                                        "DL update iter" : statistics.median(timings["DL update iter"]),
-                                        "Time load_data" : statistics.median(timings["load"]),
-                                        "Time fit/calc_loss" : statistics.median(timings["fit/loss"]),
-                                        "Time backprop" : statistics.median(timings["backprop"]),
-                                    })
-    
-        return avg_loss
+        result_dict = {}
+        result_dict["Training total_loss"] = avg_loss
+        result_dict["DL update iter"] = statistics.median(timings["DL update iter"]),
+        result_dict["Time load_data"] = statistics.median(timings["load"]),
+        result_dict["Time fit/calc_loss"] = statistics.median(timings["fit/loss"]),
+        result_dict["Time backprop"] = statistics.median(timings["backprop"]),
+  
+        return result_dict #avg_loss
     
