@@ -88,8 +88,6 @@ class Tester():
 
                 progress_bar.set_postfix(total=val_loss/(batch_id + 1))
 
-                break
-
         avg_loss = val_loss / len(dataloader)
 
         # Log to wandb
