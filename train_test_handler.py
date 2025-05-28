@@ -12,14 +12,12 @@ class TTH():
         self.trainer = trainer
         self.tester = tester
 
-    def save_model(self, path, best_comp_metric, curr_loss):
-        if curr_loss <= best_comp_metric or not best_comp_metric:
-            best_comp_metric = curr_loss
-            if os.path.exists(path):
-                os.remove(path)
-            torch.save(self.model.state_dict(), 'checkpoints/'+ path + ".pt")
-            return "Model saved"
-        return "Model not saved"
+    def save_model(self, path):
+        if os.path.exists(path):
+            os.remove(path)
+        torch.save(self.model.state_dict(), 'checkpoints/'+ path + ".pt")
+        return "Model saved"
+        
     
     def print_info(self, header, info_dict):
         print(header)
@@ -47,11 +45,14 @@ class TTH():
             time_diff = end - start
             time_to_run = str(datetime.timedelta(seconds=time_diff))
 
-            save_status = "Unapplicable"
-            if save_path != "":
-                save_status = self.save_model(save_path, 
-                                              best_comp_metric,
-                                              comp_metric)
+            save_status = "Model not saved"
+            if not best_comp_metric or comp_metric <= best_comp_metric:
+                best_comp_metric = comp_metric
+
+                if save_path != "":
+                    save_status = self.save_model(save_path)
+                    
+                
 
 
             train_output.update(val_output)
