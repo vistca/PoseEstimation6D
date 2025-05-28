@@ -10,7 +10,6 @@ from utils.wandb_setup import WandbSetup
 import yaml
 import torch
 from utils.optimizer_loader import OptimLoader
-from pose.models.efficientNet import CustomEfficientNet
 from timm.data.loader import MultiEpochsDataLoader
 from prep_data import download_data, yaml_to_json, transfer_data
 from pose.pose_dataset import PoseDataset
@@ -20,6 +19,7 @@ from pose.train import Trainer
 from pose.test import Tester
 from utils.runtime_args import add_runtime_args
 from utils.scheduler_loader import ScheduleLoader
+from pose.models.model_creator import create_model
 
 def run_program(args):
     dataset_root = args.data + "/Linemod_preprocessed"
@@ -41,14 +41,14 @@ def run_program(args):
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
-    efficient_net = CustomEfficientNet()
-    model = efficient_net.to(device)
+    selected_model = create_model(args.mod)
+    model = selected_model.to(device)
     model_params = [p for p in model.parameters() if p.requires_grad]
     
     optimloader = OptimLoader(args.optimizer, model_params, args.lr)
     optimizer = optimloader.get_optimizer()
 
-    schedulerloader = ScheduleLoader(optimizer, args.scheduler)
+    schedulerloader = ScheduleLoader(optimizer, args.scheduler, args.bs, 9479)
     scheduler = schedulerloader.get_scheduler()
 
     trainer = Trainer(model, optimizer, scheduler)
@@ -70,9 +70,9 @@ def run_program(args):
                         }
 
     
-    train_dataset = PoseDataset(dataset_root, split_percentage, split="train")
-    test_dataset = PoseDataset(dataset_root, split_percentage, split="test")
-    val_dataset = PoseDataset(dataset_root, split_percentage, split="val")
+    train_dataset = PoseDataset(dataset_root, split_percentage, model.get_dimension(), split="train")
+    test_dataset = PoseDataset(dataset_root, split_percentage, model.get_dimension(), split="test")
+    val_dataset = PoseDataset(dataset_root, split_percentage, model.get_dimension(), split="val")
     
     train_loader = MultiEpochsDataLoader(train_dataset, batch_size=args.bs, 
                                          shuffle=True, num_workers=args.w)

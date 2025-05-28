@@ -65,14 +65,12 @@ class TTH():
                    )
             
         test_result = self.tester.validate(test_dl, device, 'Test')
-        test_loss = test_result["Test total_loss"]
-        self.wandb.log_metric({
-            "Test total_loss": test_loss,
-        })
+        self.wandb.log_metric(test_result)
 
         print(f"\nTest statistics \n" \
                    "---------------------------------- \n" \
-                   f"Average test loss: {test_loss:.4f} \n" \
+                   f"Average test loss: {test_result["Test total_loss"]:.4f} \n" \
+                   f"Average ADD {test_result["Test total ADD"]:.4f}"
                     "---------------------------------- \n" \
                    )
 

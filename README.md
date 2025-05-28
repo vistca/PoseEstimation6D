@@ -31,7 +31,7 @@ python main.py --bs 32 --epochs 3 --wb {your key}
 ```
 
 # Running pose/main,py
-python -m pose.main --bs 32 --epochs 3 --no-log
+python -m pose.main --bs 32 --epochs 3 --no-log --mod "res" --test True
 ```
 
 Current state of the project:
