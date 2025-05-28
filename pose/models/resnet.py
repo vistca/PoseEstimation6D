@@ -11,8 +11,8 @@ class CustomResNet50(nn.Module):
 
         base_model = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
 
-        for param in base_model.parameters():
-            param.requires_grad = False
+        #for param in base_model.parameters():
+        #    param.requires_grad = False
 
         self.features = nn.Sequential(
             *(list(base_model.children())[:-1])
