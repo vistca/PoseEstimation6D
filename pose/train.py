@@ -27,6 +27,7 @@ class Trainer():
         start = time.perf_counter()
 
         for batch_id, batch in enumerate(progress_bar):
+            self.optimizer.zero_grad(set_to_none=True)
             end = time.perf_counter()
             self.model.train()
             timings["DL update iter"].append(end - start)
@@ -73,7 +74,6 @@ class Trainer():
             timings["fit/loss"].append(end - start)
 
             start = time.perf_counter()
-            self.optimizer.zero_grad(set_to_none=True)
 
             self.scaler.scale(loss).backward()
             scaled_factor = self.scaler.get_scale()
