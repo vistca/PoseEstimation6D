@@ -25,13 +25,7 @@ def add_runtime_args():
     
     parser.add_argument('--scheduler', type=str,
                         help='What kind of scheduler that should be applied', default=config_dict['scheduler'])
-    
-    parser.add_argument('--backbone', type=str,
-                    help='The name of the backbone', default=config_dict['backbone'])
 
-    parser.add_argument('--head', type=str,
-                    help='The name of the head', default=config_dict['head'])
-    
     parser.add_argument('--data', type=str,
                     help='The input folder', default=config_dict['data_dir'])
     

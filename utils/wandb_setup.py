@@ -29,13 +29,7 @@ class WandbSetup():
                 # Set the wandb project where this run will be logged.
                 project=project_name,
                 # Track hyperparameters and run metadata.
-                config={
-                "backbone": args.backbone,
-                "head": args.head,
-                "learning rate" : args.lr,
-                "epochs" : args.epochs,
-                "batch size" : args.bs
-                },  
+                config=args,  
             )
             print("Login complete")
         else:
