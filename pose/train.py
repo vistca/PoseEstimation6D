@@ -29,7 +29,6 @@ class Trainer():
         for batch_id, batch in enumerate(progress_bar):
             self.optimizer.zero_grad(set_to_none=True)
             end = time.perf_counter()
-            self.model.train()
             timings["DL update iter"].append(end - start)
             
             start = time.perf_counter()
