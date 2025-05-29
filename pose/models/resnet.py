@@ -23,22 +23,10 @@ class CustomResNet50(nn.Module):
 
         self.regressor = nn.Sequential(
             nn.Dropout(p=0.3),
-            #nn.Linear(2048 + 4 + 15, 256),  # ResNet50 feature size = 2048
-            nn.Linear(2048 + 64, 512),
+            nn.Linear(2048 + 4 + 15, 256),  # ResNet50 feature size = 2048
             nn.ReLU(),
             nn.Dropout(p=0.2),
-            nn.Linear(512, 12)
-        )
-
-        self.meta_nn = nn.Sequential(
-            nn.Dropout(p=0.2),
-            nn.Linear(4 + 15, 64), 
-            nn.ReLU(),
-            nn.Dropout(p=0.2),
-            nn.Linear(64, 64), 
-            nn.ReLU(),
-            nn.Dropout(p=0.2),
-            nn.Linear(64, 64), 
+            nn.Linear(256, 12)
         )
 
     def get_dimension(self):
@@ -57,10 +45,7 @@ class CustomResNet50(nn.Module):
 
         # Bounding box and ID features concatinated with the image
         id_feature = F.one_hot(zero_based_id, num_classes=15).float()
-        
-        meta_variables = torch.cat((bbox, id_feature), dim=1)
-        meta_features = self.meta_nn(meta_variables)
-        
-        features = torch.cat((img_features, meta_features), dim=1)
+    
+        features = torch.cat((img_features, bbox, id_feature), dim=1)
 
         return self.regressor(features)
