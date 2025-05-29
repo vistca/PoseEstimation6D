@@ -12,7 +12,7 @@ class OptimLoader():
             self.optim = optim.AdamW(params=model_params, lr=lr)
 
         elif optim_name == "SGD":
-            self.optim = optim.SGD(params=model_params)
+            self.optim = optim.SGD(params=model_params, nesterov=True, momentum=0.9, weight_decay=0.001)
 
         elif optim_name == "RMSprop":
             self.optim = optim.RMSprop(params=model_params)

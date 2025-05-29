@@ -1,6 +1,7 @@
 from PIL import Image, ImageDraw
 import json
 from pose.models.efficientNet import CustomEfficientNet
+from pose.models.resnet import CustomResNet50
 import torchvision.transforms as transforms
 import torch
 import numpy as np
@@ -109,11 +110,11 @@ def rotate_edges(edges, rotation_matrix):
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model_name = "pose_model_1"
+model_name = "pose_model_2"
 
-obj_id = "8"
+obj_id = "9"
 dir = "0" * (2 - len(obj_id)) + obj_id
-nr = "250"
+nr = "110"
 img_nr = "0" * (4 - len(nr))
 img_nr = img_nr + nr
 
@@ -142,6 +143,8 @@ crop = img.crop((b[0], b[1], b[0]+b[2], b[1]+b[3]))
 
 tensor_transform = transforms.Compose([
     transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                         std=[0.229, 0.224, 0.225])
 ])
 
 resize_format = (300, 300)
@@ -156,7 +159,7 @@ data_point["bbox"] = torch.tensor(b, dtype=torch.float).unsqueeze(0)
 data_point["obj_id"] = torch.tensor(id, dtype=torch.long).unsqueeze(0)
 
 
-model = CustomEfficientNet()
+model = CustomResNet50()
 model.load_state_dict(torch.load(f"./checkpoints/{model_name}.pt", map_location=device))
 model.eval()
 
