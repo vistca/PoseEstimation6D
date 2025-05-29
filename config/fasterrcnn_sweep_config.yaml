@@ -13,7 +13,7 @@ parameters:
 
   optimizer:
     distribution: categorical
-    values: ["Adam", "AdamW", "SGD", "RMSprop", "Adagrad"]
+    values: ["Adam", "AdamW", "SGD", "RMSprop"]
   
   scheduler:
     distribution: categorical
