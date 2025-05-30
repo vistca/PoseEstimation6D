@@ -5,7 +5,7 @@ def add_runtime_args():
 
     parser = argparse.ArgumentParser()
 
-    with open('config/config.yaml') as f:
+    with open('config/global_runtime_config.yaml') as f:
             config_dict = yaml.safe_load(f)
 
     parser.add_argument('--lr', type=float,
