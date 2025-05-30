@@ -10,6 +10,7 @@ from sklearn.model_selection import train_test_split
 import json
 import open3d as o3d
 from tqdm import tqdm
+from utils.image_transformations import rgb_crop_img, rgb_pad_to_square, rgb_mask_background
 
 class PoseDataset(Dataset):
     def __init__(self, dataset_root, split_ratio, dimensions, split='train', seed=42):
@@ -109,7 +110,8 @@ class PoseDataset(Dataset):
     def load_image(self, img_path, bbox):
         """Load an RGB image and convert to tensor."""
         img = Image.open(img_path).convert("RGB")
-        img = self.rgb_crop_img(img, bbox)
+        img = rgb_crop_img(img, bbox)
+        img.resize(self.dimensions)
         if self.split == "train":
             return self.train_transform(img)
         
@@ -162,11 +164,6 @@ class PoseDataset(Dataset):
         bbox = np.array([x_min, y_min, x_max, y_max], dtype=np.float32) #x_min, y_min, x_max, y_max
 
         return translation, rotation, bbox, obj_id
-
-    def rgb_crop_img(self, rgb_img, b): # b is the bounding box for the image
-        crop = rgb_img.crop((b[0], b[1], b[0]+b[2], b[1]+b[3]))
-        return crop.resize(self.dimensions)
-
 
     def __len__(self):
         """Return the total number of samples in the selected split."""
