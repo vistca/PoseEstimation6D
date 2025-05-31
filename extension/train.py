@@ -57,7 +57,6 @@ class Trainer():
                 input = {}
                 input["rgb"] = batch["rgb"][i].to(device).unsqueeze(0) # Add batch dimension
                 test = batch["depth"][i].to(device).unsqueeze(0) 
-                print("This is the depth shape: ", test.shape)
                 input["depth"] = batch["depth"][i].to(device).unsqueeze(0)  # Add batch dimension
                 input["bbox"] = batch["bbox"][i].to(device).unsqueeze(0)  # Add batch dimension
                 input["obj_id"] = batch["obj_id"][i].to(device).long().unsqueeze(0)  # Add batch dimension

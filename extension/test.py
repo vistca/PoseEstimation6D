@@ -1,38 +1,80 @@
 from tqdm import tqdm
+import time
+import statistics
 import torch
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
+import numpy as np
+from plyfile import PlyData
 
-class Tester:
+class Tester():
 
-    def __init__(self, model, wandb_instance):
+    def __init__(self, model):
         self.model = model
-        self.wandb_instance = wandb_instance
+        self.loss_fn = torch.nn.MSELoss()
 
+    def compute_ADD(self, model_points, R_gt, t_gt, R_pred, t_pred):
+      pts_gt = torch.matmul(R_gt, model_points.T).T + t_gt.view(1, 3)
+      pts_pred = torch.matmul(R_pred, model_points.T).T + t_pred.view(1, 3)
+
+      distances = torch.norm(pts_gt - pts_pred, dim=1)
+      return torch.mean(distances).item()
+
+    def load_model_points(self, ply_path, dtype=torch.float32):
+        plydata = PlyData.read(ply_path)
+        vertex_data = plydata['vertex']
+        model_points_np = np.stack([vertex_data['x'], vertex_data['y'], vertex_data['z']], axis=-1)
+        model_points = torch.tensor(model_points_np, dtype=dtype)
+        return model_points
+    
+    def get_ply_file(self, obj_id):
+        if (obj_id < 10):
+            return "obj_0" + str(obj_id) + ".ply"
+        return "obj_" + str(obj_id) + ".ply"
+
+    def get_ply_files(self):
+        folder_path = "datasets/Linemod_preprocessed/models/"
+        ply_objs = {}
+        for i in range (1,16):
+          file_name = "obj_"
+          if i < 10:
+            file_name = file_name + "0"
+          file_name = file_name + str(i) + ".ply"
+          ply_objs[i] = self.load_model_points(folder_path + file_name)
+        return ply_objs
 
     def validate(self, dataloader, device, type):
-        return {f"test" : 1}, 1
 
         self.model.eval()
         val_loss = 0.0
-        loss_classifier = 0
-        loss_box_reg = 0
-        loss_objectness = 0
-        loss_rpn_box_reg = 0
-        metric = MeanAveragePrecision()
 
         print(f"Starting {type}...")
         progress_bar = tqdm(dataloader, desc=type, ncols=100)
+        add_total = [0,0]
+        add_objects = {}
+
+        ply_objs = self.get_ply_files()
 
         with torch.no_grad():
             for batch_id, batch in enumerate(progress_bar):
-                images = batch["rgb"].to(device)
-                targets = []
-                for i in range(images.shape[0]):
-                    target = {
-                        "boxes": batch["bbox"][i].to(device).unsqueeze(0),
-                        "labels": batch["obj_id"][i].to(device).long().unsqueeze(0)
-                    }
-                    targets.append(target)
+
+                nr_datapoints = batch["rgb"].shape[0]
+                targets = torch.empty(nr_datapoints, 12, device=device)
+                inputs = []
+
+                # We must be able to improve/remove this loop                
+                for i in range(nr_datapoints):
+                    translation = batch["translation"][i].to(device).unsqueeze(0) # Add batch dimension
+                    rotation = batch["rotation"][i].to(device).flatten().unsqueeze(0) # Add batch dimension    
+                    target = torch.cat((translation, rotation), dim=1)
+                    targets[i] = target            
+                
+                for i in range(nr_datapoints):
+                    input = {}
+                    input["rgb"] = batch["rgb"][i].to(device).unsqueeze(0) # Add batch dimension
+                    input["bbox"] = batch["bbox"][i].to(device).unsqueeze(0)  # Add batch dimension
+                    input["obj_id"] = batch["obj_id"][i].to(device).long().unsqueeze(0)  # Add batch dimension
+                    input["depth"] = batch["depth"][i].to(device).unsqueeze(0)  # Add batch dimension
+                    inputs.append(input)
 
                 # Forward pass
 
@@ -41,64 +83,48 @@ class Tester:
 
                 # doing it like this takes forever, might need to check this and update it accordingly
 
-                self.model.train()
-                loss_dict = self.model(images, targets)
-                self.model.eval()
+                preds = self.model.forward(inputs)
 
                 #print(type(loss_dict), loss_dict)  # Debugging output
-                loss = sum(loss for loss in loss_dict.values())
+                loss = self.loss_fn(preds, targets)
 
-                val_loss += loss.item()
-                loss_classifier += loss_dict["loss_classifier"].item()
-                loss_box_reg += loss_dict["loss_box_reg"].item()
-                loss_objectness += loss_dict["loss_objectness"].item()
-                loss_rpn_box_reg += loss_dict["loss_rpn_box_reg"].item()
+                # Calculate the ADD metric
+                models_folder = "./datasets/Linemod_preprocessed/models/"
+                for i in range(nr_datapoints):
+                    pred = preds[i]
+                    gt = targets[i]
+                    t_pred = pred[:3].reshape(3,1).to(device)
+                    R_pred = pred[3:].reshape(3,3).to(device)
+                    t_gt = gt[:3].reshape(3,1).to(device)
+                    R_gt = gt[3:].reshape(3,3).to(device)
+                    obj_id = int(batch["obj_id"][i].item())
+                    ply_file = self.get_ply_file(obj_id)
+                    model_points = ply_objs[obj_id].to(device)
+                    add = self.compute_ADD(model_points, R_gt, t_gt, R_pred, t_pred)
+                    #print("The add is: " + str(add))
+                    add_obj = add_objects.get(str(obj_id))
+                    if not add_obj:
+                      new_count = 1
+                      new_val = add
+                    else:
+                      new_count = add_obj[0] + 1
+                      new_val = add_obj[1] + add
+                    add_objects[str(obj_id)] = [new_count, new_val]
+                    add_total = [add_total[0] + 1, add_total[1] + add]
+                val_loss += loss
 
-                # Inference for mAP
-                outputs = self.model(images)
+                progress_bar.set_postfix(total=val_loss/(batch_id + 1))
 
-                preds = []
-                gts = []
-                for pred, tgt in zip(outputs, targets):
-                    preds.append({
-                        "boxes": pred["boxes"].cpu(),
-                        "scores": pred["scores"].cpu(),
-                        "labels": pred["labels"].cpu()
-                    })
-                    gts.append({
-                        "boxes": tgt["boxes"].cpu(),
-                        "labels": tgt["labels"].cpu()
-                    })
-
-                metric.update(preds, gts)
-                progress_bar.set_postfix(total=val_loss/(batch_id + 1), 
-                                         class_loss=loss_classifier/(batch_id + 1), 
-                                         box_reg=loss_box_reg/(batch_id + 1))
-                
 
         avg_loss = val_loss / len(dataloader)
-        val_metrics = metric.compute()
-
-        # Log to wandb
-        # self.wandb_instance.log_metric({
-        #     f"{type} total_loss": avg_loss,
-        #     f"{type} class_loss": loss_classifier / len(dataloader),
-        #     f"{type} box_loss": loss_box_reg / len(dataloader),
-        #     f"{type} background_loss": loss_objectness / len(dataloader),
-        #     f"{type} rpn_box_loss": loss_rpn_box_reg / len(dataloader),
-        #     f"{type} mAP@IoU=0.5:0.95": val_metrics["map"].item(),
-        #     f"{type} mAP@IoU=0.5": val_metrics["map_50"].item(),
-        #     f"{type} mAP@IoU=0.75": val_metrics["map_75"].item(),
-        #     f"{type} AR@max=1": val_metrics["mar_1"].item(),
-        #     f"{type} AR@max=10": val_metrics["mar_10"].item(),
-        #     f"{type} AR@max=100": val_metrics["mar_100"].item(),
-        # })
-
+        avg_add_total = add_total[1] / add_total[0]
+        for k,v in add_objects.items():
+          avg_add_obj = v[1] / v[0]
+          print(f"Obj: {k}, Avg ADD: {avg_add_obj}")
+        print(f"Total average ADD: {avg_add_total}")
+        
         return {
-            f"Average {type} loss" : round(avg_loss, 4), 
-            f"Average {type} mAP" : round(val_metrics["map"].item(), 4),
-            f"{type} class_loss": loss_classifier / len(dataloader),
-            f"{type} box_loss": loss_box_reg / len(dataloader),
-            f"{type} background_loss": loss_objectness / len(dataloader),
-        }, round(avg_loss, 4)
-
+                f"{type} total_loss" : avg_loss,
+                f"{type} total ADD" : avg_add_total
+            }, avg_loss
+    

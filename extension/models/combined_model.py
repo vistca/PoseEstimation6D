@@ -15,6 +15,7 @@ class CombinedModel(nn.Module):
         rgb_out_channels = self.rgb_model.get_output_channels()
 
         pose_in_channels = rgb_out_channels + depth_out_channels
+        print("Pose in channels:", pose_in_channels)
 
         self.pose_model = CustomResNet50(pose_in_channels)
         self.global_model = None
@@ -32,12 +33,7 @@ class CombinedModel(nn.Module):
         
 
         rgb_output = self.rgb_model.forward(imgs)
-        print("RGB done")
         depth_output = self.depth_model.forward(depth)
-        print("depth done")
-
-        print(rgb_output.shape)
-        print(depth_output.shape)
 
         pose_input = torch.concat([rgb_output, depth_output], dim=1)
 

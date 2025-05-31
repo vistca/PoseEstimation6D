@@ -53,7 +53,7 @@ def run_program(args):
     scheduler = schedulerloader.get_scheduler()
 
     trainer = Trainer(model, optimizer, wandb_instance, scheduler)
-    tester = Tester(model, wandb_instance)
+    tester = Tester(model)
 
     tth = TTH(model,optimizer, 
               wandb_instance, args.epochs,

@@ -6,19 +6,15 @@ class DepthNN(nn.Module):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-
-        # Try to avrg-pool features down to 224x224?
-
+        # These layers perserve the dimensions of the image as a result of padding
         self.layers = nn.Sequential(
-            nn.Conv2d(in_channels=1, out_channels=16, kernel_size=3, stride=1),
+            nn.Conv2d(in_channels=1, out_channels=8, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(num_features=8),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=8, out_channels=16,  kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(num_features=16),
             nn.ReLU(),
-            nn.Conv2d(in_channels=16, out_channels=64,  kernel_size=3, stride=1),
-            nn.BatchNorm2d(num_features=64),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=64, out_channels=128,  kernel_size=3, stride=1),
-            nn.BatchNorm2d(num_features=128),
-            nn.ReLU(),
+            nn.Conv2d(in_channels=16, out_channels=32,  kernel_size=7, stride=2, padding=3),
         )
         
 

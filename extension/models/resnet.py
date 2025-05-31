@@ -14,8 +14,8 @@ class CustomResNet50(nn.Module):
 
         base_model = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
 
-        # Update the number of in_channels to match the other models
-        base_model.conv1.in_channels = in_channels
+        # remove the first layer as our fusion already has the same number of features
+        base_model.conv1 = nn.Identity()
 
         #for param in base_model.parameters():
         #    param.requires_grad = False

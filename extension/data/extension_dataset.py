@@ -106,18 +106,22 @@ class ExtensionDataset(Dataset):
                 samples.extend([(folder_id, sid) for sid in sample_ids])  # Store (folder_id, sample_id)
         return samples
 
-    def load_image(self, img_path, bbox):
+    def load_image(self, img_path, bbox, padding=0):
         """Load an RGB image and convert to tensor."""
         img = Image.open(img_path).convert("RGB")
-        img = self.rgb_crop_img(img, bbox)
+        img = self.rgb_crop_img(img, bbox, padding)
+        img = img.resize(self.dimensions)
         if self.split == "train":
             return self.train_transform(img)
         
         return self.val_test_transform(img)
     
-    def load_depth(self, depth_path):
+    def load_depth(self, depth_path, bbox, padding=0):
         """Load a depth image and convert to tensor."""
-        depth = np.array(Image.open(depth_path))
+        depth = Image.open(depth_path)
+        depth = self.rgb_crop_img(depth, bbox, padding)
+        depth = depth.resize(self.dimensions)
+        depth = np.array(depth)
         return torch.tensor(depth, dtype=torch.float32)
     
     def load_point_cloud(self, depth, intrinsics):
@@ -163,9 +167,16 @@ class ExtensionDataset(Dataset):
 
         return translation, rotation, bbox, obj_id
 
-    def rgb_crop_img(self, rgb_img, b): # b is the bounding box for the image
-        crop = rgb_img.crop((b[0], b[1], b[0]+b[2], b[1]+b[3]))
-        return crop.resize(self.dimensions)
+    def rgb_crop_img(self, rgb_img, b, m): # b is the bounding box for the image and m is the wanted margin
+        # b = [x_left, y_top, x_width, y_height]
+        x_min = b[0] - m * b[2]
+        x_max = b[0] + (m + 1) * b[2]
+
+        y_min = b[1] - m * b[3]
+        y_max = b[1] + (m + 1) * b[3]
+
+        crop = rgb_img.crop((x_min , y_min, x_max, y_max))
+        return crop
 
 
     def __len__(self):
@@ -187,7 +198,7 @@ class ExtensionDataset(Dataset):
 
         translation, rotation, bbox, obj_id = self.load_6d_pose(folder_id, sample_id)
         img = self.load_image(img_path, bbox)
-        depth = self.load_depth(depth_path)
+        depth = self.load_depth(depth_path, bbox)
         point_cloud = self.load_point_cloud(depth.numpy(), camera_intrinsics)
         point_cloud = torch.tensor(np.asarray(point_cloud.points), dtype=torch.float32)
 
