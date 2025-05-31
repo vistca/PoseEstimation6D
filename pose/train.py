@@ -62,10 +62,10 @@ class Trainer():
             if device.type == 'cuda':
                 with autocast(device.type):
                     preds = self.model(inputs)  
-                    loss = self.custom_loss_fn.loss(preds, targets, ids)
+                    loss = self.custom_loss_fn.loss(preds, targets, ids, device)
             else:
                 preds = self.model(inputs)
-                loss = self.custom_loss_fn.loss(preds, targets, ids)
+                loss = self.custom_loss_fn.loss(preds, targets, ids, device)
             
 
             self.model.eval()

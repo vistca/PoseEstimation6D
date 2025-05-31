@@ -43,25 +43,25 @@ class CustomLossFunctions():
             self.model_points[id] = torch.tensor(corner_points)
 
 
-    def loss(self, preds, targets, ids):
+    def loss(self, preds, targets, ids, device):
 
-        batch_size = preds.shape[0]
-        total_loss = 0.0
+        batch_size = torch.tensor(preds.shape[0]).to(device)
+        total_loss = torch.tensor(0.0, dtype=float).to(device) # 0.0
 
         for i in range(batch_size):
-            t_pred = preds[i, :3].unsqueeze(1)
-            R_pred = preds[i, 3:].reshape(3, 3)
+            t_pred = preds[i, :3].unsqueeze(1).to(device)
+            R_pred = preds[i, 3:].reshape(3, 3).to(device)
 
-            t_gt = targets[i, :3].unsqueeze(1)
-            R_gt = targets[i, 3:].reshape(3, 3)
+            t_gt = targets[i, :3].unsqueeze(1).to(device)
+            R_gt = targets[i, 3:].reshape(3, 3).to(device)
 
             model_id = ids[i]
-            pts = self.model_points[model_id].T
+            pts = self.model_points[model_id].T.to(device)
 
-            pred_pts = R_pred @ pts + t_pred
-            gt_pts = R_gt @ pts + t_gt
+            pred_pts = (R_pred @ pts + t_pred).to(device)
+            gt_pts = (R_gt @ pts + t_gt).to(device)
 
-            dist = torch.norm(pred_pts - gt_pts, dim=0).mean()
+            dist = torch.norm(pred_pts - gt_pts, dim=0).mean().to(device)
             total_loss += dist
 
         return total_loss / batch_size
