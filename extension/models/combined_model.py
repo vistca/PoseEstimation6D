@@ -25,8 +25,19 @@ class CombinedModel(nn.Module):
         as a single large model instead of several small ones
     """
     def forward(self, x):
-        rgb_output = self.rgb_model.forward(x['rgb'])
-        depth_output = self.depth_model.forward(x['depth'])
+        imgs = torch.cat([sample["rgb"] for sample in x], dim=0)
+        depth = torch.cat([sample["depth"] for sample in x], dim=0).unsqueeze(1)
+        bbox = torch.cat([sample["bbox"] for sample in x], dim=0)
+        obj_id = torch.cat([sample["obj_id"] for sample in x], dim=0)
+        
+
+        rgb_output = self.rgb_model.forward(imgs)
+        print("RGB done")
+        depth_output = self.depth_model.forward(depth)
+        print("depth done")
+
+        print(rgb_output.shape)
+        print(depth_output.shape)
 
         pose_input = torch.concat([rgb_output, depth_output], dim=1)
 
@@ -43,7 +54,7 @@ class CombinedModel(nn.Module):
     """
     def get_parameters(self):
         model_params = []
-        models = list(self.rgb_model, self.depth_model, self.pose_model)
+        models = [self.rgb_model, self.depth_model, self.pose_model]
 
         if self.global_model:
             models.append(self.global_model)
@@ -52,3 +63,6 @@ class CombinedModel(nn.Module):
             model_params.extend([p for p in model.parameters() if p.requires_grad])
 
         return model_params
+    
+    def get_dimensions(self):
+        return (224,224)

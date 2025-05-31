@@ -7,12 +7,15 @@ class CustomResNet50(nn.Module):
     def __init__(self, in_channels):
         super().__init__()
 
+
+        # TODO: Look at if more of the layers should be cut away
+
         self.dimensions = (224,224)
 
         base_model = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
 
         # Update the number of in_channels to match the other models
-        base_model[0].in_channels = in_channels
+        base_model.conv1.in_channels = in_channels
 
         #for param in base_model.parameters():
         #    param.requires_grad = False
@@ -51,3 +54,4 @@ class CustomResNet50(nn.Module):
         #features = torch.cat((img_features, bbox, id_feature), dim=1)
 
         return self.regressor(img_features)
+

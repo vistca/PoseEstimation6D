@@ -12,11 +12,6 @@ from .data.extension_dataset import ExtensionDataset
 from .test import Tester
 from .train import Trainer
 
-# import os
-# import sys
-# parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-# sys.path.insert(0, parent_dir)
-
 from utils.wandb_setup import WandbSetup
 from utils.optimizer_loader import OptimLoader
 from utils.scheduler_loader import ScheduleLoader
@@ -76,9 +71,9 @@ def run_program(args):
                         }
 
     
-    train_dataset = ExtensionDataset(dataset_root, split_percentage, split="train")
-    test_dataset = ExtensionDataset(dataset_root, split_percentage, split="test")
-    val_dataset = ExtensionDataset(dataset_root, split_percentage, split="val")
+    train_dataset = ExtensionDataset(dataset_root, split_percentage, model.get_dimensions(), split="train")
+    test_dataset = ExtensionDataset(dataset_root, split_percentage,  model.get_dimensions(), split="test")
+    val_dataset = ExtensionDataset(dataset_root, split_percentage,  model.get_dimensions(), split="val")
     
     train_loader = MultiEpochsDataLoader(train_dataset, batch_size=args.bs, 
                                          shuffle=True, num_workers=args.w)

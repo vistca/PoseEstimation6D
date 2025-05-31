@@ -9,17 +9,17 @@ class DepthNN(nn.Module):
 
         # Try to avrg-pool features down to 224x224?
 
-        self.layers = nn.Sequential([
+        self.layers = nn.Sequential(
             nn.Conv2d(in_channels=1, out_channels=16, kernel_size=3, stride=1),
-            nn.BatchNorm2d(),
+            nn.BatchNorm2d(num_features=16),
             nn.ReLU(),
             nn.Conv2d(in_channels=16, out_channels=64,  kernel_size=3, stride=1),
-            nn.BatchNorm2d(),
+            nn.BatchNorm2d(num_features=64),
             nn.ReLU(),
             nn.Conv2d(in_channels=64, out_channels=128,  kernel_size=3, stride=1),
-            nn.BatchNorm2d(),
+            nn.BatchNorm2d(num_features=128),
             nn.ReLU(),
-        ])
+        )
         
 
     def forward(self, x):
@@ -32,4 +32,3 @@ class DepthNN(nn.Module):
                 return self.layers[-i].out_channels
 
         return -1
-

@@ -6,12 +6,13 @@ from torch.amp import autocast, GradScaler
 
 class Trainer():
 
-    def __init__(self, model, optimizer, epochs):
+    def __init__(self, model, optimizer, epochs, scheduler):
         self.model = model
         self.optimizer = optimizer
         self.epochs = epochs
         self.loss_fn = torch.nn.MSELoss()
         self.scaler = GradScaler()
+        self.scheduler = scheduler
 
 
 
@@ -51,12 +52,31 @@ class Trainer():
             # send the concat to the posemodel
             # calculate the loss for the posemodel
 
-            inputs = {"rgb" : [], "depth" : [], "bbox": [], "obj_id" : []}
+            inputs = []
             for i in range(nr_datapoints):
-                inputs["rgb"] = inputs.get("rgb").append(batch["rgb"][i].to(device).unsqueeze(0))
-                inputs["depth"] = inputs.get("depth").append(batch["depth"][i].to(device).unsqueeze(0))
-                inputs["bbox"] = inputs.get("bbox").append(batch["bbox"][i].to(device).unsqueeze(0))
-                inputs["obj_id"] = inputs.get("obj_id").append(batch["obj_id"][i].to(device).unsqueeze(0))
+                input = {}
+                input["rgb"] = batch["rgb"][i].to(device).unsqueeze(0) # Add batch dimension
+                test = batch["depth"][i].to(device).unsqueeze(0) 
+                print("This is the depth shape: ", test.shape)
+                input["depth"] = batch["depth"][i].to(device).unsqueeze(0)  # Add batch dimension
+                input["bbox"] = batch["bbox"][i].to(device).unsqueeze(0)  # Add batch dimension
+                input["obj_id"] = batch["obj_id"][i].to(device).long().unsqueeze(0)  # Add batch dimension
+                inputs.append(input)
+            # inputs = {"rgb" : [], "depth" : [], "bbox": [], "obj_id" : []}
+            # for i in range(nr_datapoints):
+            #     rgb_array = inputs.get("rgb")
+            #     depth_array = inputs.get("depth")
+            #     bbox_array = inputs.get("bbox")
+            #     obj_id = inputs.get("obj_id")
+            #     rgb_array.append(batch["rgb"][i].to(device).unsqueeze(0))
+            #     depth_array.append(batch["depth"][i].to(device).unsqueeze(0))
+            #     bbox_array.append(batch["bbox"][i].to(device).unsqueeze(0))
+            #     obj_id.append(batch["obj_id"][i].to(device).unsqueeze(0))
+
+            #     inputs["rgb"] = rgb_array
+            #     inputs["depth"] = depth_array
+            #     inputs["bbox"] = bbox_array
+            #     inputs["obj_id"] = obj_id
 
             
             end = time.perf_counter()
@@ -67,7 +87,7 @@ class Trainer():
             # Using mixed precision training
             if device.type == 'cuda':
                 with autocast(device.type):
-                    preds = self.model.forward()
+                    preds = self.model.forward(inputs)
                     loss = self.loss_fn(preds, targets)
             else:
                 preds = self.model(inputs)
@@ -81,8 +101,14 @@ class Trainer():
             start = time.perf_counter()
 
             self.scaler.scale(loss).backward()
+            scaled_factor = self.scaler.get_scale()
             self.scaler.step(self.optimizer)
             self.scaler.update()
+            if not scaled_factor <= self.scaler.get_scale() and self.scheduler:
+                if self.scheduler.__class__.__name__ == "ReduceLROnPlateau":
+                    self.scheduler.step(loss)
+                else:
+                    self.scheduler.step()
 
             end = time.perf_counter()
             timings["backprop"].append(end - start)
@@ -93,6 +119,8 @@ class Trainer():
             nr_batches += 1
 
             progress_bar.set_postfix(total=total_loss/nr_batches)
+
+            break
 
         avg_loss = total_loss / len(train_loader)
 
@@ -106,3 +134,4 @@ class Trainer():
 
         return result_dict #avg_loss
     
+
