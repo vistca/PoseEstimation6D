@@ -33,17 +33,18 @@ def run_program(args):
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = FasterRCNN(args.tr, args.fm)
-
+    model = model.get_model()
     if args.lm != "":
         try:
-            
-            model.get_model().load_state_dict(torch.load(runtime_dir_path+'checkpoints/'+args.lm + ".pt", 
-                                                         weights_only=True, map_location=device.type))
+            load_path = f"{runtime_dir_path}/checkpoints/{args.lm}.pt"
+            model.load_state_dict(torch.load(load_path, weights_only=True, map_location=device.type))
+            # model.get_model().load_state_dict(torch.load(runtime_dir_path+'checkpoints/'+args.lm + ".pt", 
+            #                                              weights_only=True, map_location=device.type))
             print("Model loaded")
         except:
              raise("Could not load the model, might be due to missmatching models or something else")
 
-    model = model.get_model().to(device)
+    model = model.to(device)
     model_params = [p for p in model.parameters() if p.requires_grad]
 
     optimloader = OptimLoader(args.optimizer, model_params, args.lr)

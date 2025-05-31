@@ -16,8 +16,6 @@ class Trainer():
 
 
     def train_one_epoch(self, train_loader, device):
-
-        self.model.train() # Maybe unnecessary?
         total_loss = 0.0
         nr_batches = 0
 
@@ -29,6 +27,8 @@ class Trainer():
         for batch_id, batch in enumerate(progress_bar):
             self.optimizer.zero_grad(set_to_none=True)
             end = time.perf_counter()
+            self.optimizer.zero_grad(set_to_none=True)
+            self.model.train()
             timings["DL update iter"].append(end - start)
             
             start = time.perf_counter()
@@ -63,10 +63,6 @@ class Trainer():
             else:
                 preds = self.model(inputs)
                 loss = self.loss_fn(preds, targets)
-            
-
-            self.model.eval()
-
             
 
             end = time.perf_counter()

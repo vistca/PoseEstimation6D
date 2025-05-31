@@ -1,8 +1,8 @@
 import yaml
 import torch
 from utils.runtime_args import add_runtime_args
-from data.faster_dataset import FasterDataset
-from models.fasterRCNN import FasterRCNN
+from .data.faster_dataset import FasterDataset
+from .models.fasterRCNN import FasterRCNN
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -15,7 +15,7 @@ dataset_root = args.data + "/Linemod_preprocessed"
 # Load gt data for image bounding boxes
 
 def load_data(): 
-    with open('config/config.yaml') as f:
+    with open('config/global_runtime_config.yaml') as f:
         config_dict = yaml.safe_load(f)
 
     split_percentage = {
