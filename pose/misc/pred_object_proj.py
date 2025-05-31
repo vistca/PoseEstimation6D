@@ -112,9 +112,9 @@ def rotate_edges(edges, rotation_matrix):
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model_name = "pose_model_2"
 
-obj_id = "9"
+obj_id = "8"
 dir = "0" * (2 - len(obj_id)) + obj_id
-nr = "110"
+nr = "10"
 img_nr = "0" * (4 - len(nr))
 img_nr = img_nr + nr
 

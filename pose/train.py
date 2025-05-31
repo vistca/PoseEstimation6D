@@ -2,7 +2,7 @@ from tqdm import tqdm
 import time
 import statistics
 import torch
-from torch.amp import autocast, GradScaler
+from torch.cuda.amp import autocast, GradScaler
 
 class Trainer():
 
@@ -27,8 +27,8 @@ class Trainer():
         start = time.perf_counter()
 
         for batch_id, batch in enumerate(progress_bar):
+            self.optimizer.zero_grad(set_to_none=True)
             end = time.perf_counter()
-            self.model.train()
             timings["DL update iter"].append(end - start)
             
             start = time.perf_counter()
@@ -73,7 +73,6 @@ class Trainer():
             timings["fit/loss"].append(end - start)
 
             start = time.perf_counter()
-            self.optimizer.zero_grad(set_to_none=True)
 
             self.scaler.scale(loss).backward()
             scaled_factor = self.scaler.get_scale()

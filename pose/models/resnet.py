@@ -45,6 +45,7 @@ class CustomResNet50(nn.Module):
 
         # Bounding box and ID features concatinated with the image
         id_feature = F.one_hot(zero_based_id, num_classes=15).float()
+    
         features = torch.cat((img_features, bbox, id_feature), dim=1)
 
         return self.regressor(features)
