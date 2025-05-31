@@ -31,7 +31,7 @@ def run_program(args):
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    model = CombinedModel()
+    model = CombinedModel(device)
 
     # TODO: should look at this loading, does it load the entire model for pose or just the resnet part?
     if args.lm != "":
