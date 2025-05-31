@@ -1,7 +1,15 @@
 from PIL import Image, ImageDraw, ImageOps
 
 def rgb_crop_img(rgb_img, b): # b is the bounding box for the image
-        crop = rgb_img.crop((b[0], b[1], b[0]+b[2], b[1]+b[3]))
+        m = 0.2 # margin
+        # b = [x_left, y_top, x_width, y_height]
+        x_min = b[0] - m * b[2]
+        x_max = b[0] + (m + 1) * b[2]
+
+        y_min = b[1] - m * b[3]
+        y_max = b[1] + (m + 1) * b[3]
+
+        crop = rgb_img.crop((x_min , y_min, x_max, y_max))
         return crop 
 
 def rgb_pad_to_square(rgb_img, fill_color=(0, 0, 0)):

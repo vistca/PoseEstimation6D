@@ -10,7 +10,6 @@ from sklearn.model_selection import train_test_split
 import json
 import open3d as o3d
 from tqdm import tqdm
-from utils.image_transformations import rgb_crop_img, rgb_pad_to_square, rgb_mask_background
 
 class PoseDataset(Dataset):
     def __init__(self, dataset_root, split_ratio, dimensions, split='train', seed=42):
@@ -106,12 +105,23 @@ class PoseDataset(Dataset):
                 sample_ids = sorted([int(f.split('.')[0]) for f in os.listdir(folder_path) if f.endswith('.png')])
                 samples.extend([(folder_id, sid) for sid in sample_ids])  # Store (folder_id, sample_id)
         return samples
+    
+    def rgb_crop_img(self, rgb_img, b, m): # b is the bounding box for the image and m is the wanted margin
+        # b = [x_left, y_top, x_width, y_height]
+        x_min = b[0] - m * b[2]
+        x_max = b[0] + (m + 1) * b[2]
+
+        y_min = b[1] - m * b[3]
+        y_max = b[1] + (m + 1) * b[3]
+
+        crop = rgb_img.crop((x_min , y_min, x_max, y_max))
+        return crop
 
     def load_image(self, img_path, bbox):
         """Load an RGB image and convert to tensor."""
         img = Image.open(img_path).convert("RGB")
-        img = rgb_crop_img(img, bbox)
-        img.resize(self.dimensions)
+        img = self.rgb_crop_img(img, bbox, 0)
+        img = img.resize(self.dimensions)
         if self.split == "train":
             return self.train_transform(img)
         
