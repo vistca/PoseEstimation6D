@@ -5,6 +5,7 @@ from pose.models.resnet import CustomResNet50
 import torchvision.transforms as transforms
 import torch
 import numpy as np
+from utils.projections import project_to_2d
 
 # To run from command line:
 # python -m pose.misc.pred_object_proj
@@ -25,20 +26,6 @@ def draw_bcube(draw, pos, rot, color):
 
     for edge in proj_edges:
         draw.line(edge, fill=color, width=1)
-
-
-def project_to_2d(coord):
-    K = np.array([
-        [572.4114, 0.0, 325.2611],
-        [0.0, 573.57043, 242.04899],
-        [0.0, 0.0, 1.0]
-    ]) # The camera matrix
-
-    # The two dimensional coordinates derived through projection
-    x = (K[0, 0] * coord[0] / coord[2]) + K[0, 2]
-    y = (K[1, 1] * coord[1] / coord[2]) + K[1, 2]
-
-    return (x, y)
 
 
 def model_to_edges(model):
@@ -110,11 +97,11 @@ def rotate_edges(edges, rotation_matrix):
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model_name = "pose_model_2"
+model_name = "pose_model_3"
 
-obj_id = "9"
+obj_id = "2"
 dir = "0" * (2 - len(obj_id)) + obj_id
-nr = "110"
+nr = "1000"
 img_nr = "0" * (4 - len(nr))
 img_nr = img_nr + nr
 

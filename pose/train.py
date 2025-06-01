@@ -3,16 +3,17 @@ import time
 import statistics
 import torch
 from torch.amp import autocast, GradScaler
+from utils.custom_loss import CustomLossFunctions
 
 class Trainer():
 
     def __init__(self, model, optimizer, scheduler):
         self.model = model
         self.optimizer = optimizer
-        self.loss_fn = torch.nn.MSELoss()
+        #self.loss_fn = torch.nn.MSELoss()
+        self.custom_loss_fn = CustomLossFunctions()
         self.scaler = GradScaler()
         self.scheduler = scheduler
-
 
 
     def train_one_epoch(self, train_loader, device):
@@ -27,14 +28,15 @@ class Trainer():
         start = time.perf_counter()
 
         for batch_id, batch in enumerate(progress_bar):
+            self.optimizer.zero_grad(set_to_none=True)
             end = time.perf_counter()
-            self.model.train()
             timings["DL update iter"].append(end - start)
             
             start = time.perf_counter()
             nr_datapoints = batch["rgb"].shape[0]
             targets = torch.empty(nr_datapoints, 12, device=device)
             inputs = []
+            ids = []
 
             # We must be able to improve/remove this loop
             for i in range(nr_datapoints):
@@ -49,7 +51,8 @@ class Trainer():
                 input["bbox"] = batch["bbox"][i].to(device).unsqueeze(0)  # Add batch dimension
                 input["obj_id"] = batch["obj_id"][i].to(device).long().unsqueeze(0)  # Add batch dimension
                 inputs.append(input)
-            
+                ids.append(str(int(batch["obj_id"][i].item()))) # stores the id as a string, this is later used for the custom loss function
+
             end = time.perf_counter()
             timings["load"].append(end - start)
 
@@ -59,21 +62,16 @@ class Trainer():
             if device.type == 'cuda':
                 with autocast(device.type):
                     preds = self.model(inputs)  
-                    loss = self.loss_fn(preds, targets)
+                    loss = self.custom_loss_fn.loss(preds, targets, ids, device)
             else:
                 preds = self.model(inputs)
-                loss = self.loss_fn(preds, targets)
-            
+                loss = self.custom_loss_fn.loss(preds, targets, ids, device)
 
-            self.model.eval()
-
-            
 
             end = time.perf_counter()
             timings["fit/loss"].append(end - start)
 
             start = time.perf_counter()
-            self.optimizer.zero_grad(set_to_none=True)
 
             self.scaler.scale(loss).backward()
             scaled_factor = self.scaler.get_scale()

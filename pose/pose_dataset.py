@@ -105,11 +105,21 @@ class PoseDataset(Dataset):
                 sample_ids = sorted([int(f.split('.')[0]) for f in os.listdir(folder_path) if f.endswith('.png')])
                 samples.extend([(folder_id, sid) for sid in sample_ids])  # Store (folder_id, sample_id)
         return samples
+    
+    def rgb_crop_img(self, rgb_img, b, m): # b is the bounding box for the image and m is the wanted margin
+        # b = [x_left, y_top, x_width, y_height]
+        x_min = b[0] - m * b[2]
+        x_max = b[0] + (m + 1) * b[2]
+
+        y_min = b[1] - m * b[3]
+        y_max = b[1] + (m + 1) * b[3]
+        return rgb_img.crop((x_min , y_min, x_max, y_max))
 
     def load_image(self, img_path, bbox):
         """Load an RGB image and convert to tensor."""
         img = Image.open(img_path).convert("RGB")
-        img = self.rgb_crop_img(img, bbox)
+        img = self.rgb_crop_img(img, bbox, 0.1)
+        img = img.resize(self.dimensions)
         if self.split == "train":
             return self.train_transform(img)
         
@@ -156,17 +166,12 @@ class PoseDataset(Dataset):
         bbox = np.array(pose['obj_bb'], dtype=np.float32) #[4] ---> x_min, y_min, width, height
         obj_id = np.array(pose['obj_id'], dtype=np.float32) #[1] ---> label
 
-        x_min, y_min, width, height = bbox
-        x_max = x_min + width
-        y_max = y_min + height
-        bbox = np.array([x_min, y_min, x_max, y_max], dtype=np.float32) #x_min, y_min, x_max, y_max
+        #x_min, y_min, width, height = bbox
+        #x_max = x_min + width
+        #y_max = y_min + height
+        #bbox = np.array([x_min, y_min, x_max, y_max], dtype=np.float32) #x_min, y_min, x_max, y_max
 
         return translation, rotation, bbox, obj_id
-
-    def rgb_crop_img(self, rgb_img, b): # b is the bounding box for the image
-        crop = rgb_img.crop((b[0], b[1], b[0]+b[2], b[1]+b[3]))
-        return crop.resize(self.dimensions)
-
 
     def __len__(self):
         """Return the total number of samples in the selected split."""

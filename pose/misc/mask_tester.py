@@ -1,4 +1,3 @@
-
 from PIL import Image, ImageDraw
 import json
 import os
@@ -28,28 +27,35 @@ start = time.perf_counter()
 # [x_left, y_top, x_width, y_height]
 b = pose_data[nr][0]["obj_bb"] # bounding box
 
-draw = ImageDraw.Draw(img)
-draw.rectangle((b[0], b[1], b[0]+b[2], b[1]+b[3]), width=2)
+black_bg = Image.new("RGB", img.size, (0, 0, 0))
+
+# Create a mask where the area to keep is white (255), rest is black (0)
+mask = Image.new("L", img.size, 0)
+draw = ImageDraw.Draw(mask)
+
+print(b)
+
+# Define rectangle to keep (x1, y1, x2, y2)
+rectangle = [b[0], b[1], b[2] + b[0], b[3] + b[1]]
+draw.rectangle(rectangle, fill=255)
+
+# Composite the original image onto black using the mask
+result = Image.composite(img, black_bg, mask)
+
+
+
+#draw.rectangle((b[0], b[1], b[0]+b[2], b[1]+b[3]), width=2)
 
 img.show()
-
-crop = img.crop((b[0], b[1], b[0]+b[2], b[1]+b[3]))
-
-resize_format = (300, 300)
-crop = crop.resize(resize_format)
+result.show()
 
 end = time.perf_counter()
 
-
-crop.show()
 
 
 print(end - start)
 
 print(b)
-
-
-
 
 
 
