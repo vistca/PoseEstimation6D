@@ -12,7 +12,7 @@ import torch
 from utils.optimizer_loader import OptimLoader
 from timm.data.loader import MultiEpochsDataLoader
 from prep_data import download_data, yaml_to_json, transfer_data
-from pose.pose_dataset import PoseDataset
+from data.pose_dataset import PoseDataset
 import os
 from train_test_handler import TTH
 from pose.train import Trainer

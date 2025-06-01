@@ -113,14 +113,12 @@ class PoseDataset(Dataset):
 
         y_min = b[1] - m * b[3]
         y_max = b[1] + (m + 1) * b[3]
-
-        crop = rgb_img.crop((x_min , y_min, x_max, y_max))
-        return crop
+        return rgb_img.crop((x_min , y_min, x_max, y_max))
 
     def load_image(self, img_path, bbox):
         """Load an RGB image and convert to tensor."""
         img = Image.open(img_path).convert("RGB")
-        img = self.rgb_crop_img(img, bbox, 0)
+        img = self.rgb_crop_img(img, bbox, 0.1)
         img = img.resize(self.dimensions)
         if self.split == "train":
             return self.train_transform(img)
@@ -168,10 +166,10 @@ class PoseDataset(Dataset):
         bbox = np.array(pose['obj_bb'], dtype=np.float32) #[4] ---> x_min, y_min, width, height
         obj_id = np.array(pose['obj_id'], dtype=np.float32) #[1] ---> label
 
-        x_min, y_min, width, height = bbox
-        x_max = x_min + width
-        y_max = y_min + height
-        bbox = np.array([x_min, y_min, x_max, y_max], dtype=np.float32) #x_min, y_min, x_max, y_max
+        #x_min, y_min, width, height = bbox
+        #x_max = x_min + width
+        #y_max = y_min + height
+        #bbox = np.array([x_min, y_min, x_max, y_max], dtype=np.float32) #x_min, y_min, x_max, y_max
 
         return translation, rotation, bbox, obj_id
 
