@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
+from utils.projections import directions_from_bboxs
 
 class CustomResNet50(nn.Module):
     def __init__(self):
@@ -23,7 +24,7 @@ class CustomResNet50(nn.Module):
 
         self.regressor = nn.Sequential(
             nn.Dropout(p=0.3),
-            nn.Linear(2048 + 4 + 15, 256),  # ResNet50 feature size = 2048
+            nn.Linear(2048 + 4 + 15 + 8, 256),  # ResNet50 feature size = 2048
             nn.ReLU(),
             nn.Dropout(p=0.2),
             nn.Linear(256, 12)
@@ -36,6 +37,8 @@ class CustomResNet50(nn.Module):
         imgs = torch.cat([sample["rgb"] for sample in x], dim=0)
         bbox = torch.cat([sample["bbox"] for sample in x], dim=0)
         obj_id = torch.cat([sample["obj_id"] for sample in x], dim=0)
+
+        bbox_directions = directions_from_bboxs(bbox).float()
         zero_based_id = obj_id - 1
 
         # Feature extraction
@@ -46,6 +49,7 @@ class CustomResNet50(nn.Module):
         # Bounding box and ID features concatinated with the image
         id_feature = F.one_hot(zero_based_id, num_classes=15).float()
     
-        features = torch.cat((img_features, bbox, id_feature), dim=1)
+        features = torch.cat((img_features, bbox, id_feature, bbox_directions), dim=1)
 
         return self.regressor(features)
+
