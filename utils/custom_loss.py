@@ -16,7 +16,7 @@ class CustomLossFunctions():
         self.total_loss = 0
 
     def print_log(self):
-        print(f"rot, pos, pen ({"%"} of total loss)")
+        print(f"rot, pos, pen (as percentage of total loss)")
         print(f"{self.losses[0]/self.total_loss}, {self.losses[1]/self.total_loss}, {self.losses[1]/self.total_loss}")
 
     def __init__(self):
