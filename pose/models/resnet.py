@@ -34,11 +34,12 @@ class CustomResNet50(nn.Module):
         return self.dimensions
 
     def forward(self, x):
+        device = x[0]["rgb"].device
         imgs = torch.cat([sample["rgb"] for sample in x], dim=0)
         bbox = torch.cat([sample["bbox"] for sample in x], dim=0)
         obj_id = torch.cat([sample["obj_id"] for sample in x], dim=0)
 
-        bbox_directions = directions_from_bboxs(bbox).float()
+        bbox_directions = directions_from_bboxs(bbox).float().to(device)
         zero_based_id = obj_id - 1
 
         # Feature extraction
@@ -47,7 +48,7 @@ class CustomResNet50(nn.Module):
         img_features = self.flatten(img_features)
 
         # Bounding box and ID features concatinated with the image
-        id_feature = F.one_hot(zero_based_id, num_classes=15).float()
+        id_feature = F.one_hot(zero_based_id, num_classes=15).float().to(device)
     
         features = torch.cat((img_features, bbox, id_feature, bbox_directions), dim=1)
 
