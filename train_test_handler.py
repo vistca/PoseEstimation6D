@@ -4,18 +4,20 @@ import torch
 import os
 
 class TTH():
-    def __init__(self, model, optimizer, wandb_instance, epochs, trainer, tester):
+    def __init__(self, model, optimizer, wandb_instance, epochs, trainer, tester, runtime_path):
         self.model = model
         self.optimizer = optimizer
         self.wandb = wandb_instance
         self.epochs = epochs
         self.trainer = trainer
         self.tester = tester
+        self.runtime_path = runtime_path
 
     def save_model(self, path):
         if os.path.exists(path):
             os.remove(path)
-        torch.save(self.model.state_dict(), 'checkpoints/'+ path + ".pt")
+        save_path = f"{self.runtime_path}/checkpoints/{path}.pt"
+        torch.save(self.model.state_dict(), save_path)
         return "Model saved"
         
     

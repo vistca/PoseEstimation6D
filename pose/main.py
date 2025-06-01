@@ -12,7 +12,7 @@ import torch
 from utils.optimizer_loader import OptimLoader
 from timm.data.loader import MultiEpochsDataLoader
 from prep_data import download_data, yaml_to_json, transfer_data
-from pose.pose_dataset import PoseDataset
+from data.pose_dataset import PoseDataset
 import os
 from train_test_handler import TTH
 from pose.train import Trainer
@@ -23,6 +23,7 @@ from pose.models.model_creator import create_model
 
 def run_program(args):
     dataset_root = args.data + "/Linemod_preprocessed"
+    runtime_dir_path = os.path.dirname(os.path.abspath(__file__))
 
     wandb_instance = WandbSetup(args, "PosePhase3")
 
@@ -34,7 +35,8 @@ def run_program(args):
 
     if args.lm != "":
         try:
-            model.get_model().load_state_dict(torch.load('checkpoints/'+args.lm + ".pt", weights_only=True))
+            load_path = f"{runtime_dir_path}/checkpoints/{args.lm}.pt"
+            model.load_state_dict(torch.load(load_path, weights_only=True, map_location=device.type))
             print("Model loaded")
         except:
              raise("Could not load the model, might be due to missmatching models or something else")
@@ -56,9 +58,8 @@ def run_program(args):
 
     tth = TTH(model,optimizer, 
               wandb_instance, args.epochs,
-              trainer, tester
-              )
-    dataset_root = args.data + "/Linemod_preprocessed"
+              trainer, tester, runtime_dir_path)
+
 
     with open('config/config.yaml') as f:
             config_dict = yaml.safe_load(f)
