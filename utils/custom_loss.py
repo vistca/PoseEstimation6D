@@ -86,7 +86,7 @@ class CustomLossFunctions():
         return total_loss / batch_size
     
 
-    def orthogonality_penalty(self, R):
+    def rot_matrix_prop_penalty(self, R):
         # R is a 3x3 matrix (torch.Tensor)
         RtR = torch.matmul(R.T, R)
         identity = torch.eye(3, device=R.device)
@@ -115,11 +115,11 @@ class CustomLossFunctions():
             rot_error = torch.norm(pred_pts - gt_pts, dim=0).mean().to(device)
             pos_error = torch.norm(t_pred - t_gt).to(device)
             
-            ortho_penalty = self.orthogonality_penalty(R_pred)
+            ortho_penalty = self.rot_matrix_prop_penalty(R_pred)
 
             total_loss += 0.1 * rot_error**2
             total_loss += pos_error**2
-            total_loss += ortho_penalty
+            total_loss += 0.01 * ortho_penalty
 
         return total_loss / batch_size
 

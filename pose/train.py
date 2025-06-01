@@ -52,7 +52,7 @@ class Trainer():
                 input["obj_id"] = batch["obj_id"][i].to(device).long().unsqueeze(0)  # Add batch dimension
                 inputs.append(input)
                 ids.append(str(int(batch["obj_id"][i].item()))) # stores the id as a string, this is later used for the custom loss function
-            
+
             end = time.perf_counter()
             timings["load"].append(end - start)
 

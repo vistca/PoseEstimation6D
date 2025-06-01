@@ -118,7 +118,7 @@ class PoseDataset(Dataset):
     def load_image(self, img_path, bbox):
         """Load an RGB image and convert to tensor."""
         img = Image.open(img_path).convert("RGB")
-        img = self.rgb_crop_img(img, bbox, 0)
+        img = self.rgb_crop_img(img, bbox, 0.1)
         img = img.resize(self.dimensions)
         if self.split == "train":
             return self.train_transform(img)
