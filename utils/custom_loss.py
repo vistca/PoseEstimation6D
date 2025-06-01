@@ -43,10 +43,10 @@ class CustomLossFunctions():
             self.model_points[id] = torch.tensor(corner_points)
 
 
-    def loss(self, preds, targets, ids, device):
+    def loss_old(self, preds, targets, ids, device):
 
         batch_size = torch.tensor(preds.shape[0]).to(device)
-        total_loss = torch.tensor(0.0, dtype=float).to(device) # 0.0
+        total_loss = torch.tensor(0.0, dtype=float).to(device)
 
         for i in range(batch_size):
             t_pred = preds[i, :3].unsqueeze(1).to(device)
@@ -63,6 +63,33 @@ class CustomLossFunctions():
 
             dist = torch.norm(pred_pts - gt_pts, dim=0).mean().to(device)
             total_loss += dist
+
+        return total_loss / batch_size
+    
+    
+    def loss(self, preds, targets, ids, device):
+
+        batch_size = torch.tensor(preds.shape[0]).to(device)
+        total_loss = torch.tensor(0.0, dtype=float).to(device)
+
+        for i in range(batch_size):
+            t_pred = preds[i, :3].unsqueeze(1).to(device)
+            R_pred = preds[i, 3:].reshape(3, 3).to(device)
+
+            t_gt = targets[i, :3].unsqueeze(1).to(device)
+            R_gt = targets[i, 3:].reshape(3, 3).to(device)
+
+            model_id = ids[i]
+            pts = self.model_points[model_id].T.to(device)
+
+            pred_pts = (R_pred @ pts).to(device)
+            gt_pts = (R_gt @ pts).to(device)
+
+            rot_error = torch.norm(pred_pts - gt_pts, dim=0).mean().to(device)
+            pos_error = torch.norm(t_pred - t_gt).to(device)
+            
+            total_loss += rot_error**2
+            total_loss += pos_error**2
 
         return total_loss / batch_size
 
