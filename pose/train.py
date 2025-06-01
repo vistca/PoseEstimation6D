@@ -4,6 +4,7 @@ import statistics
 import torch
 from torch.amp import autocast, GradScaler
 from utils.custom_loss import CustomLossFunctions
+import numpy as np
 
 class Trainer():
 
@@ -21,6 +22,7 @@ class Trainer():
         self.model.train() # Maybe unnecessary?
         total_loss = 0.0
         nr_batches = 0
+        losses_origin = np.array([0.0, 0.0, 0.0])
 
         timings = {"DL update iter" : [], "load" : [], "fit/loss" : [], "backprop" : []}
 
@@ -69,6 +71,7 @@ class Trainer():
                 preds = self.model(inputs)
                 loss = self.custom_loss_fn.loss(preds, targets, ids, device)
 
+            losses_origin += self.custom_loss_fn.get_losses()
 
             end = time.perf_counter()
             timings["fit/loss"].append(end - start)
@@ -105,6 +108,9 @@ class Trainer():
             "DL update iter" : statistics.median(timings["DL update iter"]),
             "Time load_data" : statistics.median(timings["load"]),
             "Time fit/calc_loss" : statistics.median(timings["fit/loss"]),
-            "Time backprop" : statistics.median(timings["backprop"])
+            "Time backprop" : statistics.median(timings["backprop"]),
+            "rot" : losses_origin[0] / nr_batches,
+            "pos" : losses_origin[1] / nr_batches,
+            "pen" : losses_origin[2] / nr_batches
         }
     

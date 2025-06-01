@@ -4,31 +4,17 @@ import torch
 
 class CustomLossFunctions():
 
-
-    def log_losses(self, rot, pos, pen):
-        self.losses[0] += rot.item()
-        self.losses[1] += pos.item()
-        self.losses[2] += pen.item()
-        self.total_loss += rot.item() + pos.item() + pen.item()
-
-    def reset_log(self):
-        self.losses = [0, 0, 0]
-        self.total_loss = 0
-
-    def print_log(self):
-        print(f"rot, pos, pen (as percentage of total loss)")
-        print(f"{self.losses[0]/self.total_loss}, {self.losses[1]/self.total_loss}, {self.losses[1]/self.total_loss}")
-
     def __init__(self):
         with open("./datasets/Linemod_preprocessed/models/models_info.json", 'r') as f:
             models = json.load(f) 
+
+        self.batch_size = 1
 
         self.models = {}
         self.model_points = {}
 
         self.losses = [0, 0, 0]
         self.total_loss = 0
-
 
         for id in ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15"]:
             model = models[id]
@@ -61,13 +47,25 @@ class CustomLossFunctions():
 
             self.model_points[id] = torch.tensor(corner_points)
 
+    def log_losses(self, rot, pos, pen):
+        self.losses[0] += rot.item()
+        self.losses[1] += pos.item()
+        self.losses[2] += pen.item()
+        self.total_loss += rot.item() + pos.item() + pen.item()
+
+    def reset_log(self):
+        self.losses = np.array([0.0, 0.0, 0.0])
+        self.total_loss = 0.0
+
+    def get_losses(self):
+        return self.losses / (self.batch_size * self.total_loss)
 
     def loss_old(self, preds, targets, ids, device):
-
-        batch_size = torch.tensor(preds.shape[0]).to(device)
+        
+        self.batch_size = torch.tensor(preds.shape[0]).to(device)
         total_loss = torch.tensor(0.0, dtype=float).to(device)
 
-        for i in range(batch_size):
+        for i in range(self.batch_size):
             t_pred = preds[i, :3].unsqueeze(1).to(device)
             R_pred = preds[i, 3:].reshape(3, 3).to(device)
 
@@ -82,8 +80,8 @@ class CustomLossFunctions():
 
             dist = torch.norm(pred_pts - gt_pts, dim=0).mean().to(device)
             total_loss += dist
-
-        return total_loss / batch_size
+  
+        return total_loss / self.batch_size
     
 
     def rot_matrix_prop_penalty(self, R):
@@ -96,6 +94,7 @@ class CustomLossFunctions():
     
     def loss(self, preds, targets, ids, device="cpu"): # the default is set to cpu for testing, in training it should always be provided
 
+        self.reset_log()
         batch_size = torch.tensor(preds.shape[0]).to(device)
         total_loss = torch.tensor(0.0, dtype=float).to(device)
 
@@ -117,9 +116,11 @@ class CustomLossFunctions():
             
             ortho_penalty = self.rot_matrix_prop_penalty(R_pred)
 
-            total_loss += 0.1 * rot_error**2
-            total_loss += pos_error**2
-            total_loss += 0.01 * ortho_penalty
+            rot = 0.1 * rot_error**2
+            pos = pos_error**2
+            pen = 0.01 * ortho_penalty
+            self.log_losses(rot, pos, pen)
+            total_loss += rot + pos + pen
 
         return total_loss / batch_size
 
