@@ -4,12 +4,31 @@ import torch
 
 class CustomLossFunctions():
 
+
+    def log_losses(self, rot, pos, pen):
+        self.losses[0] += rot.item()
+        self.losses[1] += pos.item()
+        self.losses[2] += pen.item()
+        self.total_loss += rot.item() + pos.item() + pen.item()
+
+    def reset_log(self):
+        self.losses = [0, 0, 0]
+        self.total_loss = 0
+
+    def print_log(self):
+        print(f"rot, pos, pen ({"%"} of total loss)")
+        print(f"{self.losses[0]/self.total_loss}, {self.losses[1]/self.total_loss}, {self.losses[1]/self.total_loss}")
+
     def __init__(self):
         with open("./datasets/Linemod_preprocessed/models/models_info.json", 'r') as f:
             models = json.load(f) 
 
         self.models = {}
         self.model_points = {}
+
+        self.losses = [0, 0, 0]
+        self.total_loss = 0
+
 
         for id in ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15"]:
             model = models[id]
@@ -66,8 +85,16 @@ class CustomLossFunctions():
 
         return total_loss / batch_size
     
+
+    def orthogonality_penalty(self, R):
+        # R is a 3x3 matrix (torch.Tensor)
+        RtR = torch.matmul(R.T, R)
+        identity = torch.eye(3, device=R.device)
+        diff = RtR - identity
+        return torch.norm(diff, p='fro')  # Frobenius norm
     
-    def loss(self, preds, targets, ids, device="cpu"):
+    
+    def loss(self, preds, targets, ids, device="cpu"): # the default is set to cpu for testing, in training it should always be provided
 
         batch_size = torch.tensor(preds.shape[0]).to(device)
         total_loss = torch.tensor(0.0, dtype=float).to(device)
@@ -88,8 +115,11 @@ class CustomLossFunctions():
             rot_error = torch.norm(pred_pts - gt_pts, dim=0).mean().to(device)
             pos_error = torch.norm(t_pred - t_gt).to(device)
             
-            total_loss += rot_error**2
+            ortho_penalty = self.orthogonality_penalty(R_pred)
+
+            total_loss += 0.1 * rot_error**2
             total_loss += pos_error**2
+            total_loss += ortho_penalty
 
         return total_loss / batch_size
 
