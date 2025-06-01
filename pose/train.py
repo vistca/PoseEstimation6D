@@ -66,11 +66,7 @@ class Trainer():
             else:
                 preds = self.model(inputs)
                 loss = self.custom_loss_fn.loss(preds, targets, ids, device)
-            
 
-            self.model.eval()
-
-            
 
             end = time.perf_counter()
             timings["fit/loss"].append(end - start)

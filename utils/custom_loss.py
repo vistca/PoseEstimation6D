@@ -67,7 +67,7 @@ class CustomLossFunctions():
         return total_loss / batch_size
     
     
-    def loss(self, preds, targets, ids, device):
+    def loss(self, preds, targets, ids, device="cpu"):
 
         batch_size = torch.tensor(preds.shape[0]).to(device)
         total_loss = torch.tensor(0.0, dtype=float).to(device)
@@ -98,17 +98,17 @@ class CustomLossFunctions():
 
 # preds = np.array([
 #                 [0,0,0, 1,0,0, 0,1,0, 0,0,1],
-#                 #[1,1,1, 1,0,0, 0,1,0, 0,0,1],
+#                 [3,1,1, 1,0,0, 0,1,0, 0,0,1],
 #             ], dtype=np.float32)
 # preds = torch.tensor(preds)
 
 # targets = np.array([
-#                 [10,10,0, 1,0,0, 0,1,0, 0,0,1],
-#                 #[1,1,1, 1,0,0, 0,1,0, 0,0,1],
+#                 [10,0,0, 1,0,0, 0,1,0, 0,0,1],
+#                 [1,1,1, 1,0,0, 0,1,0, 0,0,1],
 #             ], dtype=np.float32)
 # targets = torch.tensor(targets)
 
-# ids = ["3"]
+# ids = ["3", "10"]
 
-# print(loss_function.loss(preds, targets, ids))
+# print(loss_function.loss(preds, targets, ids).item())
 
