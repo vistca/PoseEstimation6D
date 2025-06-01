@@ -90,8 +90,8 @@ class CustomLossFunctions():
         # R is a 3x3 matrix (torch.Tensor)
         RtR = torch.matmul(R.T, R)
         identity = torch.eye(3, device=R.device)
-        diff = RtR - identity
-        return torch.norm(diff, p='fro')  # Frobenius norm
+        diff = (RtR - identity).flatten()
+        return torch.norm(diff)
     
     
     def loss(self, preds, targets, ids, device="cpu"): # the default is set to cpu for testing, in training it should always be provided
