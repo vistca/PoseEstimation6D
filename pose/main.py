@@ -12,7 +12,7 @@ import torch
 from utils.optimizer_loader import OptimLoader
 from timm.data.loader import MultiEpochsDataLoader
 from prep_data import download_data, yaml_to_json, transfer_data
-from data.pose_dataset import PoseDataset
+from .data.pose_dataset import PoseDataset
 import os
 from train_test_handler import TTH
 from pose.train import Trainer
@@ -61,7 +61,7 @@ def run_program(args):
               trainer, tester, runtime_dir_path)
 
 
-    with open('config/config.yaml') as f:
+    with open('config/global_runtime_config.yaml') as f:
             config_dict = yaml.safe_load(f)
 
     split_percentage = {

@@ -10,6 +10,8 @@ from sklearn.model_selection import train_test_split
 import json
 import open3d as o3d
 from tqdm import tqdm
+from PIL import Image, ImageDraw, ImageFont
+import matplotlib.pyplot as plt
 
 class PoseDataset(Dataset):
     def __init__(self, dataset_root, split_ratio, dimensions, split='train', seed=42):
@@ -119,7 +121,25 @@ class PoseDataset(Dataset):
         """Load an RGB image and convert to tensor."""
         img = Image.open(img_path).convert("RGB")
         img = self.rgb_crop_img(img, bbox, 0.1)
+
         img = img.resize(self.dimensions)
+        # draw = ImageDraw.Draw(img)
+
+        # # 3. Pick a font (here we use the default; you can also load a TTF)
+        # font = ImageFont.load_default()
+
+        # # 4. Define the text and its position (10px from top and left)
+        # text = img_path
+        # position = (10, 10)  # (x, y) in pixels
+
+        # # 5. Draw the text in purple (R=128, G=0, B=128)
+        # draw.text(position, text, fill=(128, 0, 128), font=font)
+
+        # # 6. Display with Matplotlib
+        # plt.imshow(img)
+        # plt.axis("off")
+        # plt.show()
+
         if self.split == "train":
             return self.train_transform(img)
         
@@ -190,11 +210,13 @@ class PoseDataset(Dataset):
         img_path = os.path.join(self.dataset_root, 'data', folder_id, f"rgb/{sample_id:04d}.png")
         depth_path = os.path.join(self.dataset_root, 'data', folder_id, f"depth/{sample_id:04d}.png")
 
+
         translation, rotation, bbox, obj_id = self.load_6d_pose(folder_id, sample_id)
         img = self.load_image(img_path, bbox)
         depth = self.load_depth(depth_path)
         point_cloud = self.load_point_cloud(depth.numpy(), camera_intrinsics)
         point_cloud = torch.tensor(np.asarray(point_cloud.points), dtype=torch.float32)
+
 
 
         # TODO: Look at tensor creation "sourceTensor.clone().detach().requires_grad_(True)" instead of torch.tensor()
