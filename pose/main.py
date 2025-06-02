@@ -15,7 +15,8 @@ from prep_data import download_data, yaml_to_json, transfer_data
 from pose.pose_dataset import PoseDataset
 import os
 from train_test_handler import TTH
-from pose.train import Trainer
+#from pose.train import Trainer
+from pose.train2 import Trainer
 from pose.test import Tester
 from utils.runtime_args import add_runtime_args
 from utils.scheduler_loader import ScheduleLoader

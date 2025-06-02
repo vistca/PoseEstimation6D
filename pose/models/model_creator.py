@@ -1,5 +1,6 @@
 from pose.models.efficientNet import CustomEfficientNet
 from pose.models.resnet import CustomResNet50
+from pose.models.gt_model import GTNet
 
 
 def create_model(model_id):
@@ -9,6 +10,9 @@ def create_model(model_id):
     elif model_id == "res":
         print("Selected model: CustomResNet50")
         return CustomResNet50()
+    elif model_id == "gt":
+        print("The GT is being served")
+        return GTNet()
     else:
         return ValueError("No such model exist!")
 

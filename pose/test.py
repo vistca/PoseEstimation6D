@@ -70,9 +70,9 @@ class Tester():
                 
                 for i in range(nr_datapoints):
                     input = {}
-                    input["rgb"] = batch["rgb"][i].to(device).unsqueeze(0) # Add batch dimension
-                    input["bbox"] = batch["bbox"][i].to(device).unsqueeze(0)  # Add batch dimension
-                    input["obj_id"] = batch["obj_id"][i].to(device).long().unsqueeze(0)  # Add batch dimension
+                    #input["rgb"] = batch["rgb"][i].to(device).unsqueeze(0) # Add batch dimension
+                    #input["bbox"] = batch["bbox"][i].to(device).unsqueeze(0)  # Add batch dimension
+                    #input["obj_id"] = batch["obj_id"][i].to(device).long().unsqueeze(0)  # Add batch dimension
                     input["t"] = batch["translation"][i].to(device).unsqueeze(0) # Add batch dimension
                     input["R"] = batch["rotation"][i].to(device).flatten().unsqueeze(0) # Add batch dimension
 
@@ -86,6 +86,14 @@ class Tester():
                 # doing it like this takes forever, might need to check this and update it accordingly
 
                 preds = self.model(inputs)
+
+                # print("print from test: (preds, inputs, targets, model, params)")
+                # print(preds)
+                # print(inputs)
+                # print(targets)
+                # print(self.model)
+                # for param in self.model.parameters():
+                #     print(param)
 
                 #print(type(loss_dict), loss_dict)  # Debugging output
                 loss = self.loss_fn(preds, targets)
