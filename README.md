@@ -72,7 +72,7 @@ The arguments include:
 To train and run phase 4, i.e estimating the 6d pose from rgb and depth images run the following
 
 ```
-python -m pose.main --{args}
+python -m extension.main --{args}
 
 The arguments include:
 - lr:  learning rate
