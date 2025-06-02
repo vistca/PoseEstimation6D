@@ -11,6 +11,8 @@ Implement YOLO. Start training in the phase 2
 - Felix
 
 # How to run
+
+### Prep project
 After cloaning the project run the following commands in the terminal:
 ```
 pip install -r requirements.txt
@@ -21,33 +23,70 @@ For downloading the data and placing it in the correct path run
 python prep_data.py --gf {path to dataset.zip}
 ```
 
-Finally, start training and testhing through:
+## Running entire project
+WIP. TO be added
+
+## Running individual parts
+
+### Run phase 2 separately
+To train and run phase 2, i.e just retrieving the the 2d bounding boxes run the following
+
 ```
-# Without logging 
-python main.py --bs 32 --epochs 3 --no-log
+python -m 2dBox.main --{args}
 
-# With logging 
-python main.py --bs 32 --epochs 3 --wb {your key}
+The arguments include:
+- lr:  learning rate
+- bs:  batch size
+- epochs:  the number of epochs
+- optimizer:  the name of the optimizer
+- scheduler:  the name of the scheduler
+- wb:   if wandb should be used, else specify --no-log
+- lm:   name for loading model 
+- sm:   name for saving model
+- tr:   how much of the model that is trainable
+- fm:   fasterRcnn model name
+- test:     if testing should be carried out
 ```
 
-# Running pose/main,py
-python -m pose.main --bs 32 --epochs 3 --no-log --mod "res" --test True
+### Run phase 3 separately
+To train and run phase 3, i.e estimating the 6d pose from rgb images run the following
+
+```
+python -m pose.main --{args}
+
+The arguments include:
+- lr:  learning rate
+- bs:  batch size
+- epochs:  the number of epochs
+- optimizer:  the name of the optimizer
+- scheduler:  the name of the scheduler
+- wb:   if wandb should be used, else specify --no-log
+- lm:   name for loading model 
+- sm:   name for saving model
+- mod:   the name of the model that should be used  
+- test:   if testing should be carried out
+
 ```
 
-Current state of the project:
+### Run phase 4 separately
+To train and run phase 4, i.e estimating the 6d pose from rgb and depth images run the following
 
- - We have the Faster R-CNN but it has not trained it
- 
+```
+python -m pose.main --{args}
 
-Wish list:
+The arguments include:
+- lr:  learning rate
+- bs:  batch size
+- epochs:  the number of epochs
+- optimizer:  the name of the optimizer
+- scheduler:  the name of the scheduler
+- wb:   if wandb should be used, else specify --no-log
+- lm:   name for loading model 
+- sm:   name for saving model
+- mod:   the name of the model that should be used  
+- test:   if testing should be carried out
+```
 
- - Being able to see the bounding boxes
-
- - Normalizeing the data, maybe?
-
- - Step 3 can be worked on indepentedly of step 2
-
- - Add validation set and retrieve validation accuracy
 
 
 Questions for the supervisor:
@@ -73,10 +112,3 @@ Answers from the supervisor session:
 
  - Input the rations of the image size transfomration to the fully connected layer of the model.
 
-
-TODO:
- - Add object id as another input to the classifier of the pose estimator
-
- - Normalize the images with std and mean???
-
- - Add that we separate the checkpoints for Faster R-CNN and EfficientNet

@@ -10,6 +10,8 @@ from sklearn.model_selection import train_test_split
 import json
 import open3d as o3d
 from tqdm import tqdm
+from PIL import Image, ImageDraw, ImageFont
+import matplotlib.pyplot as plt
 
 class ExtensionDataset(Dataset):
     def __init__(self, dataset_root, split_ratio, dimensions, split='train', seed=42):
@@ -106,21 +108,38 @@ class ExtensionDataset(Dataset):
                 samples.extend([(folder_id, sid) for sid in sample_ids])  # Store (folder_id, sample_id)
         return samples
 
-    def load_image(self, img_path, bbox, padding=0):
+    def load_image(self, img_path, bbox, padding=0.1):
         """Load an RGB image and convert to tensor."""
         img = Image.open(img_path).convert("RGB")
         img = self.rgb_crop_img(img, bbox, padding)
         img = img.resize(self.dimensions)
+        
+        #If we want to visialize the img crop
+        # draw = ImageDraw.Draw(img)
+        # font = ImageFont.load_default()
+        # text = img_path
+        # position = (10, 10)
+        # draw.text(position, text, fill=(128, 0, 128), font=font)
+        # plt.imshow(img)
+        # plt.axis("off")
+        # plt.show()
+
         if self.split == "train":
             return self.train_transform(img)
         
         return self.val_test_transform(img)
     
-    def load_depth(self, depth_path, bbox, padding=0):
+    def load_depth(self, depth_path, bbox, padding=0.1):
         """Load a depth image and convert to tensor."""
         depth = Image.open(depth_path)
         depth = self.rgb_crop_img(depth, bbox, padding)
         depth = depth.resize(self.dimensions)
+        
+        # If we want to visualize the depth crop
+        # plt.imshow(depth)
+        # plt.axis("off")
+        # plt.show()
+
         depth = np.array(depth)
         return torch.tensor(depth, dtype=torch.float32)
     
@@ -160,23 +179,22 @@ class ExtensionDataset(Dataset):
         bbox = np.array(pose['obj_bb'], dtype=np.float32) #[4] ---> x_min, y_min, width, height
         obj_id = np.array(pose['obj_id'], dtype=np.float32) #[1] ---> label
 
-        x_min, y_min, width, height = bbox
-        x_max = x_min + width
-        y_max = y_min + height
-        bbox = np.array([x_min, y_min, x_max, y_max], dtype=np.float32) #x_min, y_min, x_max, y_max
+        # x_min, y_min, width, height = bbox
+        # x_max = x_min + width
+        # y_max = y_min + height
+        # bbox = np.array([x_min, y_min, x_max, y_max], dtype=np.float32) #x_min, y_min, x_max, y_max
 
         return translation, rotation, bbox, obj_id
 
     def rgb_crop_img(self, rgb_img, b, m): # b is the bounding box for the image and m is the wanted margin
         # b = [x_left, y_top, x_width, y_height]
+
         x_min = b[0] - m * b[2]
         x_max = b[0] + (m + 1) * b[2]
-
         y_min = b[1] - m * b[3]
         y_max = b[1] + (m + 1) * b[3]
 
-        crop = rgb_img.crop((x_min , y_min, x_max, y_max))
-        return crop
+        return rgb_img.crop((x_min , y_min, x_max, y_max))
 
 
     def __len__(self):
