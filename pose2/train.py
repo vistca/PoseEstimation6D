@@ -2,7 +2,7 @@ from tqdm import tqdm
 import time
 import statistics
 import torch
-from torch.cuda.amp import autocast, GradScaler
+from torch.amp import autocast, GradScaler
 
 class Trainer():
 
@@ -87,8 +87,6 @@ class Trainer():
             nr_batches += 1
 
             progress_bar.set_postfix(total=total_loss/nr_batches)
-
-            break
 
 
         avg_loss = total_loss / len(train_loader)

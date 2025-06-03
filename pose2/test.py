@@ -146,8 +146,6 @@ class Tester():
 
                 progress_bar.set_postfix(total=val_loss/(batch_id + 1))
 
-                break
-
 
         avg_loss = val_loss / len(dataloader)
         avg_add_total = add_total[1] / add_total[0]
