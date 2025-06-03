@@ -67,7 +67,7 @@ class Tester():
                 gt_ts = []
                 gt_Rs = []
                 models_points_3d = []
-                gts = []
+                gts = torch.empty(nr_datapoints, 12, dtype=torch.float32)
 
                 # # Target during testing
                 # for i in range(nr_datapoints):                
@@ -95,7 +95,7 @@ class Tester():
                     translation = batch["translation"][i].to(device).unsqueeze(0) # Add batch dimension
                     rotation = batch["rotation"][i].to(device).flatten().unsqueeze(0) # Add batch dimension    
                     data_3d = torch.cat((translation, rotation), dim=1).squeeze()
-                    gts.append(data_3d)
+                    gts[i] = data_3d
 
                 # Forward pass
 
@@ -105,10 +105,13 @@ class Tester():
                 # doing it like this takes forever, might need to check this and update it accordingly
 
                 preds = self.model(inputs)    
+                loss = self.loss_fn(preds, targets)
 
                 preds = rescale_pred(preds, bboxes, nr_datapoints)
+                gts = rescale_pred(gts, bboxes, nr_datapoints)
 
-                loss = self.loss_fn(preds, targets)
+                print(preds)
+                print(gts)
 
                 preds_3d = reconstruct_3d_points_from_pred(preds, models_points_3d, nr_datapoints)
 

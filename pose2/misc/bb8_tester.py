@@ -12,9 +12,9 @@ import time
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model_name = "best"
 
-id = "15"
+id = "8"
 dir = (2-len(id)) * "0" + id
-nr = "230"
+nr = "281"
 img_nr = "0" * (4 - len(nr))
 img_nr = img_nr + nr
 
