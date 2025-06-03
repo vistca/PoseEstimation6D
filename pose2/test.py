@@ -108,10 +108,10 @@ class Tester():
                 loss = self.loss_fn(preds, targets)
 
                 preds = rescale_pred(preds, bboxes, nr_datapoints)
-                gts = rescale_pred(gts, bboxes, nr_datapoints)
+                targets = rescale_pred(targets, bboxes, nr_datapoints)
 
                 print(preds)
-                print(gts)
+                print(targets)
 
                 preds_3d = reconstruct_3d_points_from_pred(preds, models_points_3d, nr_datapoints)
 
