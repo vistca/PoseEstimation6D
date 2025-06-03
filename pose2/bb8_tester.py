@@ -5,6 +5,7 @@ import json
 import numpy as np
 from torchvision import transforms
 import cv2
+from plyfile import PlyData
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -127,16 +128,50 @@ success, pred_rvec, pred_pos = cv2.solvePnP(
 )
 
 
-
-#print(pred_rvec)
-print(pred_pos)
 pred_rot_matrix, _ = cv2.Rodrigues(pred_rvec)
-print(pred_rot_matrix)
 
-gt_t = torch.tensor(pose_data[nr][0]["cam_t_m2c"])
-gt_R = torch.tensor(pose_data[nr][0]["cam_R_m2c"]).reshape((3,3))
+pred_t = torch.tensor(pred_pos, dtype=torch.float32)
+pred_R = torch.tensor(pred_rot_matrix, dtype=torch.float32)
+
+print(pred_t)
+print(pred_R)
+
+gt_t = torch.tensor(pose_data[nr][0]["cam_t_m2c"], dtype=torch.float32)
+gt_R = torch.tensor(pose_data[nr][0]["cam_R_m2c"], dtype=torch.float32).reshape((3,3))
 
 print(gt_t)
 print(gt_R)
 
 
+def load_model_points(ply_path, dtype=torch.float32):
+    plydata = PlyData.read(ply_path)
+    vertex_data = plydata['vertex']
+    model_points_np = np.stack([vertex_data['x'], vertex_data['y'], vertex_data['z']], axis=-1)
+    model_points = torch.tensor(model_points_np, dtype=dtype)
+    return model_points
+
+def get_ply_files():
+        folder_path = "datasets/Linemod_preprocessed/models/"
+        ply_objs = {}
+        for i in range (1,16):
+          file_name = "obj_"
+          if i < 10:
+            file_name = file_name + "0"
+          file_name = file_name + str(i) + ".ply"
+          ply_objs[i] = load_model_points(folder_path + file_name)
+        return ply_objs
+
+def compute_ADD(model_points, R_gt, t_gt, R_pred, t_pred):
+      pts_gt = torch.matmul(R_gt, model_points.T).T + t_gt.view(1, 3)
+      pts_pred = torch.matmul(R_pred, model_points.T).T + t_pred.view(1, 3)
+
+      distances = torch.norm(pts_gt - pts_pred, dim=1)
+      return torch.mean(distances).item()
+
+ply_objs = get_ply_files()
+
+model_points = ply_objs[int(id)]
+
+add = compute_ADD(model_points, gt_R, gt_t, pred_R, pred_t)
+
+print(add)
