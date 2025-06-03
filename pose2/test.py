@@ -62,7 +62,7 @@ class Tester():
                 targets = torch.empty(nr_datapoints, 16, device=device)
                 inputs = []
 
-                bboxes = []
+                bboxes = torch.empty(nr_datapoints, 4, dtype=torch.float32)
                 gt_ts = []
                 gt_Rs = []
                 models_points_3d = []
@@ -82,14 +82,14 @@ class Tester():
 
                 # infomration used for transforming prediction into 3d
                 for i in range(nr_datapoints):
-                    bboxes.append(batch["obj_id"][i])
+                    bboxes[i] = batch["obj_id"][i]
                     gt_ts.append(batch["translation"][i])
                     gt_Rs.append(batch["rotation"][i])
                     models_points_3d.append(batch["points_3d"][i])
 
                     translation = batch["translation"][i].to(device).unsqueeze(0) # Add batch dimension
                     rotation = batch["rotation"][i].to(device).flatten().unsqueeze(0) # Add batch dimension    
-                    data_3d = torch.cat((translation, rotation), dim=1)
+                    data_3d = torch.cat((translation, rotation), dim=1).squeeze()
                     gts.append(data_3d)
 
                 # Forward pass
@@ -110,12 +110,12 @@ class Tester():
                 models_folder = "./datasets/Linemod_preprocessed/models/"
                 for i in range(nr_datapoints):
                     pred_3d = preds_3d[i]
-                    gt = targets[i]
+                    gt = gts[i]
                     t_pred = pred_3d[:3].reshape(3,1).to(device)
                     R_pred = pred_3d[3:].reshape(3,3).to(device)
                     t_gt = gt[:3].reshape(3,1).to(device)
                     R_gt = gt[3:].reshape(3,3).to(device)
-                    obj_id = int(batch["obj_id"][i].item())
+                    obj_id = int(batch["obj_id"][i].item()+1)
                     ply_file = self.get_ply_file(obj_id)
                     model_points = ply_objs[obj_id].to(device)
                     add = self.compute_ADD(model_points, R_gt, t_gt, R_pred, t_pred)
@@ -132,8 +132,6 @@ class Tester():
                 val_loss += loss
 
                 progress_bar.set_postfix(total=val_loss/(batch_id + 1))
-
-                break
 
 
         avg_loss = val_loss / len(dataloader)
