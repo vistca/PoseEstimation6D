@@ -1,4 +1,5 @@
 from pose2.models.bb8_1 import BB8Model_1
+from pose2.models.bb8_2 import BB8Model_2
 import torch
 from PIL import Image, ImageDraw
 import json
@@ -10,9 +11,9 @@ import time
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model_name = "best"
+model_name = "pose_bb8" #"best"
 
-id = "15"
+id = "8"
 dir = (2-len(id)) * "0" + id
 nr = "230"
 img_nr = "0" * (4 - len(nr))
@@ -24,7 +25,7 @@ info_path = "./datasets/Linemod_preprocessed/data/" + dir + "/"
 image_name = img_nr + ".png"
 json_name = "gt.json"
 
-model = BB8Model_1()
+model = BB8Model_2() # BB8Model_1()
 
 img = Image.open(img_path + image_name).convert("RGB")
 
@@ -57,19 +58,16 @@ transform = transforms.Compose([
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
 
-checkpoint = torch.load(f"./pose2/checkpoints/{model_name}.pth", map_location=device)
-model.load_state_dict(checkpoint['model_state_dict'])
+#checkpoint = torch.load(f"./pose2/checkpoints/{model_name}.pth", map_location=device)
+#model.load_state_dict(checkpoint['model_state_dict'])
+model.load_state_dict(torch.load(f"./pose2/checkpoints/{model_name}.pt", map_location=device))
 model.eval()
 
 
 input_img = transform(crop)
 
-pred_points, _ = model(input_img.unsqueeze(0))
+pred_points = model(input_img.unsqueeze(0))
 pred_points = pred_points.squeeze(0)
-
-
-
-
 
 
 model_points_2d = np.empty((8,2))
