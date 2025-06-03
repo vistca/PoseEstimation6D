@@ -23,10 +23,10 @@ def reconstruct_3d_points_from_pred(preds: torch.Tensor, models_points_3d, bboxe
         width = x_max - x_min
         height = y_max - y_min
 
-        for i in range(nr_points):
-            point_x = pred_points[2*i].item() * width + x_min
-            point_y = pred_points[2*i+1].item() * height + y_min
-            model_points_2d[i] = point_x, point_y
+        for j in range(nr_points):
+            point_x = pred_points[2*j].item() * width + x_min
+            point_y = pred_points[2*j+1].item() * height + y_min
+            model_points_2d[j] = point_x, point_y
 
         model_points_3d = models_points_3d[i]
 
