@@ -33,18 +33,20 @@ class Trainer():
             
             start = time.perf_counter()
             nr_datapoints = batch["rgb"].shape[0]
-            targets = torch.empty(nr_datapoints, 16, device=device)
-            inputs = []
+            #targets = torch.empty(nr_datapoints, 16, device=device)
+            #inputs = []
 
-            for i in range(nr_datapoints):                
-                targets[i] = batch["points_2d"][i].to(device).unsqueeze(0)  
+            # for i in range(nr_datapoints):                
+            #     targets[i] = batch["points_2d"][i].to(device).unsqueeze(0)  
+            targets = batch["points_2d"].to(device)
             
-            for i in range(nr_datapoints):
-                input = {}
-                input["rgb"] = batch["rgb"][i].to(device).unsqueeze(0) # Add batch dimension
-                input["bbox"] = batch["bbox"][i].to(device).unsqueeze(0)  # Add batch dimension
-                input["obj_id"] = batch["obj_id"][i].to(device).long().unsqueeze(0)  # Add batch dimension
-                inputs.append(input)
+            # for i in range(nr_datapoints):
+            #     input = {}
+            #     input["rgb"] = batch["rgb"][i].to(device).unsqueeze(0) # Add batch dimension
+            #     input["bbox"] = batch["bbox"][i].to(device).unsqueeze(0)  # Add batch dimension
+            #     input["obj_id"] = batch["obj_id"][i].to(device).long().unsqueeze(0)  # Add batch dimension
+            #     inputs.append(input)
+            inputs = batch["rgb"].to(device)
 
             end = time.perf_counter()
             timings["load"].append(end - start)

@@ -69,17 +69,21 @@ class Tester():
                 models_points_3d = []
                 gts = []
 
-                # Target during testing
-                for i in range(nr_datapoints):                
-                    targets[i] = batch["points_2d"][i].to(device).unsqueeze(0)           
+                # # Target during testing
+                # for i in range(nr_datapoints):                
+                #     targets[i] = batch["points_2d"][i].to(device).unsqueeze(0)           
                 
-                # Input during testing
-                for i in range(nr_datapoints):
-                    input = {}
-                    input["rgb"] = batch["rgb"][i].to(device).unsqueeze(0) # Add batch dimension
-                    input["bbox"] = batch["bbox"][i].to(device).unsqueeze(0)  # Add batch dimension
-                    input["obj_id"] = batch["obj_id"][i].to(device).long().unsqueeze(0)  # Add batch dimension
-                    inputs.append(input)
+                # # Input during testing
+                # for i in range(nr_datapoints):
+                #     input = {}
+                #     input["rgb"] = batch["rgb"][i].to(device).unsqueeze(0) # Add batch dimension
+                #     input["bbox"] = batch["bbox"][i].to(device).unsqueeze(0)  # Add batch dimension
+                #     input["obj_id"] = batch["obj_id"][i].to(device).long().unsqueeze(0)  # Add batch dimension
+                #     inputs.append(input)
+
+                targets = batch["points_2d"].to(device)
+            
+                inputs = batch["rgb"].to(device)
 
                 # infomration used for transforming prediction into 3d
                 for i in range(nr_datapoints):
