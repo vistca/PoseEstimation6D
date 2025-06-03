@@ -87,6 +87,8 @@ class Trainer():
 
             progress_bar.set_postfix(total=total_loss/nr_batches)
 
+            break
+
 
         avg_loss = total_loss / len(train_loader)
   

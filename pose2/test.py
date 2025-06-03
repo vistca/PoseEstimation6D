@@ -5,6 +5,7 @@ import torch
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
 import numpy as np
 from plyfile import PlyData
+from pose2.reconstruct3d import reconstruct_3d_points_from_pred
 
 class Tester():
 
@@ -61,15 +62,35 @@ class Tester():
                 targets = torch.empty(nr_datapoints, 16, device=device)
                 inputs = []
 
+                bboxes = []
+                gt_ts = []
+                gt_Rs = []
+                models_points_3d = []
+                gts = []
+
+                # Target during testing
                 for i in range(nr_datapoints):                
                     targets[i] = batch["points_2d"][i].to(device).unsqueeze(0)           
                 
+                # Input during testing
                 for i in range(nr_datapoints):
                     input = {}
                     input["rgb"] = batch["rgb"][i].to(device).unsqueeze(0) # Add batch dimension
                     input["bbox"] = batch["bbox"][i].to(device).unsqueeze(0)  # Add batch dimension
                     input["obj_id"] = batch["obj_id"][i].to(device).long().unsqueeze(0)  # Add batch dimension
                     inputs.append(input)
+
+                # infomration used for transforming prediction into 3d
+                for i in range(nr_datapoints):
+                    bboxes.append(batch["obj_id"][i])
+                    gt_ts.append(batch["translation"][i])
+                    gt_Rs.append(batch["rotation"][i])
+                    models_points_3d.append(batch["points_3d"][i])
+
+                    translation = batch["translation"][i].to(device).unsqueeze(0) # Add batch dimension
+                    rotation = batch["rotation"][i].to(device).flatten().unsqueeze(0) # Add batch dimension    
+                    data_3d = torch.cat((translation, rotation), dim=1)
+                    gts.append(data_3d)
 
                 # Forward pass
 
@@ -83,13 +104,15 @@ class Tester():
                 #print(type(loss_dict), loss_dict)  # Debugging output
                 loss = self.loss_fn(preds, targets)
 
+                preds_3d = reconstruct_3d_points_from_pred(preds, models_points_3d, bboxes, nr_datapoints)
+
                 # Calculate the ADD metric
                 models_folder = "./datasets/Linemod_preprocessed/models/"
                 for i in range(nr_datapoints):
-                    pred = preds[i]
+                    pred_3d = preds_3d[i]
                     gt = targets[i]
-                    t_pred = pred[:3].reshape(3,1).to(device)
-                    R_pred = pred[3:].reshape(3,3).to(device)
+                    t_pred = pred_3d[:3].reshape(3,1).to(device)
+                    R_pred = pred_3d[3:].reshape(3,3).to(device)
                     t_gt = gt[:3].reshape(3,1).to(device)
                     R_gt = gt[3:].reshape(3,3).to(device)
                     obj_id = int(batch["obj_id"][i].item())
@@ -110,6 +133,8 @@ class Tester():
 
                 progress_bar.set_postfix(total=val_loss/(batch_id + 1))
 
+                break
+
 
         avg_loss = val_loss / len(dataloader)
         avg_add_total = add_total[1] / add_total[0]
@@ -123,3 +148,4 @@ class Tester():
                 f"{type} total ADD" : avg_add_total
             }, avg_loss
     
+
