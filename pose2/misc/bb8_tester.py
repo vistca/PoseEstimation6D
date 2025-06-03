@@ -6,6 +6,7 @@ import numpy as np
 from torchvision import transforms
 import cv2
 from plyfile import PlyData
+import time
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -118,6 +119,7 @@ camera_matrix = np.array([
     [0.0, 0.0, 1.0]
 ], dtype=np.float32)
 
+start = time.perf_counter()
 
 success, pred_rvec, pred_pos = cv2.solvePnP(
     objectPoints=model_points_3d,
@@ -129,6 +131,10 @@ success, pred_rvec, pred_pos = cv2.solvePnP(
 
 
 pred_rot_matrix, _ = cv2.Rodrigues(pred_rvec)
+
+end = time.perf_counter()
+
+print(f"Time to PnP: {int(1000*(end-start))}ms")
 
 pred_t = torch.tensor(pred_pos, dtype=torch.float32)
 pred_R = torch.tensor(pred_rot_matrix, dtype=torch.float32)
