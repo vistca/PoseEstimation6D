@@ -44,5 +44,7 @@ def reconstruct_3d_points_from_pred(preds: torch.Tensor, models_points_3d, bboxe
 
         result[i] = torch.cat((pred_t, pred_R), dim=0)
 
+        print(success)
+
     return result
 

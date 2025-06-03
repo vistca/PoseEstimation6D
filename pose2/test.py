@@ -52,6 +52,7 @@ class Tester():
         progress_bar = tqdm(dataloader, desc=type, ncols=100)
         add_total = [0,0]
         add_objects = {}
+        inf_add_count = 0
 
         ply_objs = self.get_ply_files()
 
@@ -121,6 +122,10 @@ class Tester():
                     add = self.compute_ADD(model_points, R_gt, t_gt, R_pred, t_pred)
                     #print("The add is: " + str(add))
                     add_obj = add_objects.get(str(obj_id))
+                    if add == float("inf"):
+                       add = 0
+                       inf_add_count += 1
+
                     if not add_obj:
                       new_count = 1
                       new_val = add
@@ -141,9 +146,13 @@ class Tester():
           print(f"Obj: {k}, Avg ADD: {avg_add_obj}")
         print(f"Total average ADD: {avg_add_total}")
         
+        if inf_add_count != 0:
+           print(f"number of data points resulting in an infinite ADD = {inf_add_count}")
+
         return {
                 f"{type} total_loss" : avg_loss,
-                f"{type} total ADD" : avg_add_total
+                f"{type} total ADD" : avg_add_total,
+                "inf ADD count" : inf_add_count
             }, avg_loss
     
 
