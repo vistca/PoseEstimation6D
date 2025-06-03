@@ -5,7 +5,7 @@ import torch
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
 import numpy as np
 from plyfile import PlyData
-from pose2.reconstruct3d import reconstruct_3d_points_from_pred
+from pose2.reconstruct3d import reconstruct_3d_points_from_pred, rescale_pred
 
 class Tester():
 
@@ -87,7 +87,7 @@ class Tester():
 
                 # infomration used for transforming prediction into 3d
                 for i in range(nr_datapoints):
-                    bboxes[i] = batch["obj_id"][i]
+                    bboxes[i] = batch["bbox"][i]
                     gt_ts.append(batch["translation"][i])
                     gt_Rs.append(batch["rotation"][i])
                     models_points_3d.append(batch["points_3d"][i])
@@ -104,12 +104,13 @@ class Tester():
 
                 # doing it like this takes forever, might need to check this and update it accordingly
 
-                preds = self.model(inputs)
+                preds = self.model(inputs)    
 
-                #print(type(loss_dict), loss_dict)  # Debugging output
+                preds = rescale_pred(preds, bboxes, nr_datapoints)
+
                 loss = self.loss_fn(preds, targets)
 
-                preds_3d = reconstruct_3d_points_from_pred(preds, models_points_3d, bboxes, nr_datapoints)
+                preds_3d = reconstruct_3d_points_from_pred(preds, models_points_3d, nr_datapoints)
 
                 # Calculate the ADD metric
                 models_folder = "./datasets/Linemod_preprocessed/models/"
@@ -141,6 +142,8 @@ class Tester():
                 val_loss += loss
 
                 progress_bar.set_postfix(total=val_loss/(batch_id + 1))
+
+                break
 
 
         avg_loss = val_loss / len(dataloader)
