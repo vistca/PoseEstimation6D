@@ -15,7 +15,7 @@ import cv2
 from functools import lru_cache
 from tqdm import tqdm
 from plyfile import PlyData
-from reconstruct3d import reconstruct_3d_points_from_pred, rescale_pred
+from pose3.reconstruct3d import reconstruct_3d_points_from_pred, rescale_pred
 
 
 # --- BB8Model (PoseModel) Class Definition ---
@@ -240,6 +240,32 @@ class LinemodDataset(Dataset):
     def __len__(self):
         return len(self.samples)
 
+    # Moved from BB8Model to LinemodDataset for efficiency
+    def get_3d_bbox_points(self, obj_id):
+      """Obtains the 3D bounding box points for an object from dataset's models_info"""
+      # models_info is already loaded in __init__
+      info = self.models_info[obj_id]
+      x_size = info['size_x']
+      y_size = info['size_y']
+      z_size = info['size_z']
+
+      half_x = x_size / 2
+      half_y = y_size / 2
+      half_z = z_size / 2
+
+      points_3d = np.array([
+          [-half_x, -half_y, -half_z],
+          [half_x, -half_y, -half_z],
+          [half_x, half_y, -half_z],
+          [-half_x, half_y, -half_z],
+          [-half_x, -half_y, half_z],
+          [half_x, -half_y, half_z],
+          [half_x, half_y, half_z],
+          [-half_x, half_y, half_z]
+      ], dtype=np.float32)
+
+      return points_3d
+
     def __getitem__(self, idx):
         folder_id, sample_id = self.samples[idx]
         camera_intrinsics, _ = self.load_config(folder_id)
@@ -285,10 +311,12 @@ class LinemodDataset(Dataset):
 
         # Load the original image without normalization for potential visualization later
         original_img_tensor = transforms.ToTensor()(Image.open(img_path).convert("RGB"))
+        points_3d = self.get_3d_bbox_points(obj_id)
 
         return {
             "rgb": cropped_tensor,
             "points_2d": torch.tensor(points_norm),
+            "points_3d": torch.tensor(points_3d),
             "obj_id": torch.tensor(obj_id - 1),  # Convert to 0-based index
             "original_img": original_img_tensor, # Use the correctly loaded original image
             "bbox": torch.tensor(bbox),
@@ -346,7 +374,7 @@ def load_model_points( ply_path, dtype=torch.float32):
     model_points = torch.tensor(model_points_np, dtype=dtype)
     return model_points
 
-def get_ply_files(self):
+def get_ply_files():
         folder_path = "Linemod_preprocessed/models/"
         ply_objs = {}
         for i in range (1,16):
@@ -354,7 +382,7 @@ def get_ply_files(self):
           if i < 10:
             file_name = file_name + "0"
           file_name = file_name + str(i) + ".ply"
-          ply_objs[i] = self.load_model_points(folder_path + file_name)
+          ply_objs[i] = load_model_points(folder_path + file_name)
         return ply_objs
 
 # --- train_model function ---
@@ -413,6 +441,7 @@ def train_model(batch_size = 128, num_epochs=10):
             loss.backward() # Perform backpropagation
             optimizer.step() # Update model parameters
             train_loss += loss.item() # Accumulate training loss
+            break
 
         # Validation phase
         model.eval() # Set model to evaluation mode
