@@ -11,7 +11,7 @@ import time
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model_name = "pose_bb8" #"best"
+model_name = "bb8_mod_1"
 
 id = "8"
 dir = (2-len(id)) * "0" + id
@@ -25,7 +25,7 @@ info_path = "./datasets/Linemod_preprocessed/data/" + dir + "/"
 image_name = img_nr + ".png"
 json_name = "gt.json"
 
-model = BB8Model_2() # BB8Model_1()
+model = BB8Model_2()
 
 img = Image.open(img_path + image_name).convert("RGB")
 
@@ -134,7 +134,7 @@ end = time.perf_counter()
 
 print(f"Time to PnP: {int(1000*(end-start))}ms")
 
-pred_t = torch.tensor(pred_pos, dtype=torch.float32)
+pred_t = torch.tensor(pred_pos, dtype=torch.float32).T.squeeze()
 pred_R = torch.tensor(pred_rot_matrix, dtype=torch.float32)
 
 print(pred_t)
@@ -172,10 +172,52 @@ def compute_ADD(model_points, R_gt, t_gt, R_pred, t_pred):
       distances = torch.norm(pts_gt - pts_pred, dim=1)
       return torch.mean(distances).item()
 
+def project_to_2d(coord):
+    K = np.array([
+        [572.4114, 0.0, 325.2611],
+        [0.0, 573.57043, 242.04899],
+        [0.0, 0.0, 1.0]
+    ]) # The camera matrix
+
+    # The two dimensional coordinates derived through projection
+    x = (K[0, 0] * coord[0] / coord[2]) + K[0, 2]
+    y = (K[1, 1] * coord[1] / coord[2]) + K[1, 2]
+
+    return (x, y)
+
 ply_objs = get_ply_files()
 
 model_points = ply_objs[int(id)]
 
 add = compute_ADD(model_points, gt_R, gt_t, pred_R, pred_t)
 
-print(add)
+print(f"ADD = {add}")
+
+points_3d = torch.Tensor(model_points_3d)
+
+img = Image.open(img_path + image_name).convert("RGB")
+draw = ImageDraw.Draw(img)
+
+def draw_points_from_R_t(draw, edges, pred_t, pred_R, points_3d, color):
+    rotated_points = (pred_R @ points_3d.T).T
+
+    resulting_points = []
+
+    for i in range(8):
+        translated_points = rotated_points[i] + pred_t.T
+        point = project_to_2d(translated_points.numpy())
+        resulting_points.append(point)
+
+    for edge in edges:
+        x1, y1 = resulting_points[edge[0]]
+        x2, y2 = resulting_points[edge[1]]
+        draw.line(((x1, y1), (x2, y2)), fill=color, width=2)
+
+draw_points_from_R_t(draw, edges, pred_t, pred_R, points_3d, "#CC00FF")
+draw_points_from_R_t(draw, edges, gt_t, gt_R, points_3d, "#0C8F00")
+
+
+img.show()
+print("pink is pred, green is gt")
+
+

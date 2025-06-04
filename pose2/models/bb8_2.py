@@ -16,7 +16,7 @@ class BB8Model_2(nn.Module):
         )
 
         # Cache for 3D models (not used by BB8Model itself, but kept for potential future use)
-        self.model_points_cache = {}
+        # self.model_points_cache = {}
 
     def get_dimension(self):
         return (224, 224)

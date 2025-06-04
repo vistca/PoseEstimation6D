@@ -188,4 +188,4 @@ datasets/
 .DS_Store
 
 
-best.pth
+/pose2/checkpoints/
