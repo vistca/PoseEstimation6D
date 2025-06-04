@@ -441,7 +441,6 @@ def train_model(batch_size = 128, num_epochs=10):
             loss.backward() # Perform backpropagation
             optimizer.step() # Update model parameters
             train_loss += loss.item() # Accumulate training loss
-            break
 
         # Validation phase
         model.eval() # Set model to evaluation mode
