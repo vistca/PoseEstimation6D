@@ -14,6 +14,8 @@ from sklearn.model_selection import train_test_split
 import cv2
 from functools import lru_cache
 from tqdm import tqdm
+from plyfile import PlyData
+from reconstruct3d import reconstruct_3d_points_from_pred, rescale_pred
 
 
 # --- BB8Model (PoseModel) Class Definition ---
@@ -330,6 +332,31 @@ def create_dataloaders(data_dir, batch_size=16):
     return train_loader, val_loader
 
 
+def compute_ADD( model_points, R_gt, t_gt, R_pred, t_pred):
+    pts_gt = torch.matmul(R_gt, model_points.T).T + t_gt.view(1, 3)
+    pts_pred = torch.matmul(R_pred, model_points.T).T + t_pred.view(1, 3)
+
+    distances = torch.norm(pts_gt - pts_pred, dim=1)
+    return torch.mean(distances).item()
+
+def load_model_points( ply_path, dtype=torch.float32):
+    plydata = PlyData.read(ply_path)
+    vertex_data = plydata['vertex']
+    model_points_np = np.stack([vertex_data['x'], vertex_data['y'], vertex_data['z']], axis=-1)
+    model_points = torch.tensor(model_points_np, dtype=dtype)
+    return model_points
+
+def get_ply_files(self):
+        folder_path = "Linemod_preprocessed/models/"
+        ply_objs = {}
+        for i in range (1,16):
+          file_name = "obj_"
+          if i < 10:
+            file_name = file_name + "0"
+          file_name = file_name + str(i) + ".ply"
+          ply_objs[i] = self.load_model_points(folder_path + file_name)
+        return ply_objs
+
 # --- train_model function ---
 def train_model(batch_size = 128, num_epochs=10):
     # Configuration
@@ -390,6 +417,12 @@ def train_model(batch_size = 128, num_epochs=10):
         # Validation phase
         model.eval() # Set model to evaluation mode
         val_loss = 0.0
+        add_total = [0,0]
+        add_objects = {}
+        inf_add_count = 0
+
+        ply_objs = get_ply_files()
+
         with torch.no_grad(): # Disable gradient calculation for validation
             for batch in tqdm(val_loader, desc=f"Epoch {epoch+1}/{num_epochs} - Val"):
                 images = batch['rgb'].cuda()
@@ -405,6 +438,69 @@ def train_model(batch_size = 128, num_epochs=10):
 
                 loss = criterion(selected_preds, targets) # Calculate validation loss
                 val_loss += loss.item() # Accumulate validation loss
+
+                # Computing ADD metric
+
+                nr_datapoints = batch["rgb"].shape[0]
+
+                bboxes = torch.empty(nr_datapoints, 4, dtype=torch.float32)
+                gt_ts = []
+                gt_Rs = []
+                models_points_3d = []
+                gts = torch.empty(nr_datapoints, 12, dtype=torch.float32)
+
+                # infomration used for transforming prediction into 3d
+                for i in range(nr_datapoints):
+                    bboxes[i] = batch["bbox"][i]
+                    gt_ts.append(batch["translation"][i])
+                    gt_Rs.append(batch["rotation"][i])
+                    models_points_3d.append(batch["points_3d"][i])
+
+                    translation = batch["translation"][i].to(device).unsqueeze(0) # Add batch dimension
+                    rotation = batch["rotation"][i].to(device).flatten().unsqueeze(0) # Add batch dimension    
+                    data_3d = torch.cat((translation, rotation), dim=1).squeeze()
+                    gts[i] = data_3d
+
+                preds_3d = reconstruct_3d_points_from_pred(pred_points, models_points_3d, nr_datapoints)
+
+                # Calculate the ADD metric
+                models_folder = "Linemod_preprocessed/models/"
+                for i in range(nr_datapoints):
+                    pred_3d = preds_3d[i]
+                    gt = gts[i]
+                    t_pred = pred_3d[:3].reshape(3,1).to(device)
+                    R_pred = pred_3d[3:].reshape(3,3).to(device)
+                    t_gt = gt[:3].reshape(3,1).to(device)
+                    R_gt = gt[3:].reshape(3,3).to(device)
+                    obj_id = int(batch["obj_id"][i].item()+1)
+                    model_points = ply_objs[obj_id].to(device)
+                    add = compute_ADD(model_points, R_gt, t_gt, R_pred, t_pred)
+                    #print("The add is: " + str(add))
+                    add_obj = add_objects.get(str(obj_id))
+                    if add == float("inf"):
+                       add = 0
+                       inf_add_count += 1
+
+                    if not add_obj:
+                      new_count = 1
+                      new_val = add
+                    else:
+                      new_count = add_obj[0] + 1
+                      new_val = add_obj[1] + add
+                    add_objects[str(obj_id)] = [new_count, new_val]
+                    add_total = [add_total[0] + 1, add_total[1] + add]
+
+        
+        avg_add_total = add_total[1] / add_total[0]
+        for k,v in add_objects.items():
+          avg_add_obj = v[1] / v[0]
+          print(f"Obj: {k}, Avg ADD: {avg_add_obj}")
+        print(f"Total average ADD: {avg_add_total}")
+        
+        if inf_add_count != 0:
+           print(f"number of data points resulting in an infinite ADD = {inf_add_count}")
+
+
 
         avg_train_loss = train_loss / len(train_loader)
         avg_val_loss = val_loss / len(val_loader)
