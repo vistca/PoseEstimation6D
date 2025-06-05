@@ -86,7 +86,7 @@ def run_program(args):
             save_path = f"./pose2/checkpoints/{args.sm}.pt"
             torch.save(model.state_dict(), save_path)
             
-            print("✅ New best model saved.")
+            print("New best model saved.")
 
     if args.test:
         test_results = tester.validate(test_loader, device, epoch, type="Test")

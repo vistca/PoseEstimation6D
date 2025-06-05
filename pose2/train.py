@@ -36,9 +36,6 @@ class Trainer():
             self.optimizer.step() # Update model parameters
             total_loss += loss.item() # Accumulate training loss
 
-            # Track loss
-            total_loss += loss.item()
-
             nr_batches += 1
 
             progress_bar.set_postfix(total=total_loss/nr_batches)
@@ -49,5 +46,4 @@ class Trainer():
         return {
             "Training total_loss" : avg_loss,
         }
-    
     
