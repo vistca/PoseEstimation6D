@@ -1,7 +1,7 @@
 import torch.nn as nn
 from torchvision.models import resnet18
 
-class BB8Model_2(nn.Module):
+class BB8Model_1(nn.Module):
     def __init__(self):
         super().__init__()
         # We use ResNet18 as the backbone instead of VGG for greater efficiency
