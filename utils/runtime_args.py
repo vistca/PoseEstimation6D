@@ -60,7 +60,7 @@ def add_runtime_args():
                         help='the name of the project to be logged', default="PoseEstimation6D")
     
     parser.add_argument('--mod', type=str,
-                        help="The identifyer of a pose estimation model", default="eff")
+                        help="The identifyer of a pose estimation model", default="res18")
     
     return parser.parse_args()
     

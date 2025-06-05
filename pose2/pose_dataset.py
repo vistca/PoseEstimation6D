@@ -1,5 +1,5 @@
 import os
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import Dataset
 from torchvision import transforms
 import torch
 import yaml
@@ -13,21 +13,38 @@ from tqdm import tqdm
 # This class is included here to make the code self-contained,
 # as it was defined in a previous turn and is used by the training function.
 class LinemodDataset(Dataset):
-    def __init__(self, dataset_root, split='train', train_ratio=0.8, seed=42):
+    def __init__(self, dataset_root, split_ratio, dimensions, split='train', seed=42):
         self.dataset_root = dataset_root
         self.split = split
-        self.train_ratio = train_ratio
         self.seed = seed
+        self.split_ratio = split_ratio
+        self.dimensions = dimensions
         self.samples = self.get_all_samples()
+
+        print(f"Loading the {split} data ...")
 
         if not self.samples:
             raise ValueError(f"No samples found in {self.dataset_root}.")
-
+        
+        # Split into training and test sets
         self.train_samples, self.test_samples = train_test_split(
-            self.samples, train_size=self.train_ratio, random_state=self.seed
+            self.samples, train_size=(1-self.split_ratio['test_%']), random_state=self.seed
+        )
+        
+        adjusted_train_perc = self.split_ratio['train_%'] / (self.split_ratio['train_%'] + self.split_ratio['val_%'])
+
+        self.train_samples, self.val_samples = train_test_split(
+            self.train_samples, train_size=adjusted_train_perc, random_state=42
         )
 
-        self.samples = self.train_samples if split == 'train' else self.test_samples
+        # Select the appropriate split
+        if self.split == "train":
+            self.samples = self.train_samples
+        elif self.split == "val":
+            self.samples = self.val_samples
+        else:
+            self.samples = self.test_samples
+
 
         # This transform is applied to the *cropped* image in __getitem__
         self.transform = transforms.Compose([
@@ -226,7 +243,7 @@ class LinemodDataset(Dataset):
         y_max = min(original_img_pil.height, y_max + pad_y)
 
         cropped_pil = original_img_pil.crop((x_min, y_min, x_max, y_max))
-        cropped_resized_pil = transforms.Resize((224, 224))(cropped_pil)
+        cropped_resized_pil = transforms.Resize(self.dimensions)(cropped_pil)
 
         # Apply the dataset's transform (ToTensor, Normalize) to the cropped image
         cropped_tensor = self.transform(cropped_resized_pil)
