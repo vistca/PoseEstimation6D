@@ -101,5 +101,5 @@ if __name__ == "__main__":
     args = add_runtime_args()
     run_program(args)
 
-# python -m pose2.main --lr 0.001 --bs 16 --epochs 2 --mod res18 --test True
+# python -m pose2.main --lr 0.001 --bs 16 --epochs 2 --mod bb8_1 --test True
 
