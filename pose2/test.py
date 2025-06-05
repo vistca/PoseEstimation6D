@@ -87,7 +87,7 @@ class Tester():
         
         for k,v in add_objects.items():
             avg_add_obj = v[1] / v[0]
-            print(f"Obj: {k}, Avg ADD: {avg_add_obj}")
+            print(f"Obj: {k}, Avg ADD: {avg_add_obj}, num obj: {v[0]}")
         print(f"Total average ADD: {avg_add_total}")
 
         return {

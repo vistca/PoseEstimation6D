@@ -145,7 +145,14 @@ class LinemodDataset(Dataset):
             print(f"id: {sample_id},{pose_data}")
             raise KeyError(f"Sample ID {sample_id} not found in gt.yml for folder {folder_id}.")
 
-        pose = pose_data[sample_id][0]
+        poses = pose_data[sample_id]
+        
+        pose = None # pose[0]
+        for temp_pose in poses:
+            if temp_pose['obj_id'] == int(folder_id):
+                pose = temp_pose
+        
+        [0] # <--- point of concern
         translation = np.array(pose['cam_t_m2c'], dtype=np.float32)
         rotation = np.array(pose['cam_R_m2c'], dtype=np.float32).reshape(3, 3)
         bbox = np.array(pose['obj_bb'], dtype=np.float32)

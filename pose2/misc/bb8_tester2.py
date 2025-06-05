@@ -14,7 +14,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #model_name = "add_30_BB8Model"
 model_name = "res50_1"
 
-id = "5"
+id = "2"
 dir = (2-len(id)) * "0" + id
 nr = "230"
 img_nr = "0" * (4 - len(nr))
@@ -96,6 +96,11 @@ for edge in edges:
 img.show()
 
 info = models_info[id]
+
+print("- "*10)
+print(id)
+print(info)
+
 x_size = info['size_x']
 y_size = info['size_y']
 z_size = info['size_z']
