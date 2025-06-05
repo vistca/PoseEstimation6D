@@ -17,9 +17,6 @@ from pose2.models.model_creator import create_model
 
 
 
-from pose2.models.bb8_2 import BB8Model_2
-
-
 def run_program(args):
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -71,10 +68,16 @@ def run_program(args):
 
         # Training loop with progress bar
         for batch in tqdm(train_loader, desc=f"Epoch {epoch+1}/{args.epochs} - Train"):
-            images = batch['rgb'].to(device)
-            targets = batch['points_2d'].to(device)
 
-            pred_points = model(images) # Forward pass: predict 2D points and ignore symmetry output
+            #images = batch['rgb'].to(device)
+            inputs = {}
+            inputs["rgb"] = batch["rgb"].to(device)
+            inputs["bbox"] = batch["bbox"].to(device)
+            inputs["obj_id"] = batch["obj_id"].to(device).long()
+
+            pred_points = model(inputs) # Forward pass: predict 2D points and ignore symmetry output
+
+            targets = batch['points_2d'].to(device)
 
             # Removed the redundant loop for selected_preds
             loss = criterion(pred_points, targets) # Calculate loss between predicted and target points
@@ -92,10 +95,16 @@ def run_program(args):
 
         with torch.no_grad(): # Disable gradient calculation for validation
             for batch in tqdm(val_loader, desc=f"Epoch {epoch+1}/{args.epochs} - Val"):
-                images = batch['rgb'].to(device)
-                targets = batch['points_2d'].to(device)
+                
+                #images = batch['rgb'].to(device)
+                inputs = {}
+                inputs["rgb"] = batch["rgb"].to(device)
+                inputs["bbox"] = batch["bbox"].to(device)
+                inputs["obj_id"] = batch["obj_id"].to(device).long()
 
-                pred_points = model(images) # Forward pass
+                pred_points = model(inputs) # Forward pass
+
+                targets = batch['points_2d'].to(device)
 
                 # Removed the redundant loop for selected_preds
                 loss = criterion(pred_points, targets) # Calculate validation loss
@@ -135,6 +144,7 @@ def run_program(args):
                     add_objects[str(int(ids[i].item()+1))] = [new_count, new_val]
                     add_total = [add_total[0] + 1, add_total[1] + add]
 
+
         avg_train_loss = train_loss / len(train_loader)
         avg_val_loss = val_loss / len(val_loader)
         print(f"Epoch {epoch+1}/{args.epochs} - Train Loss: {avg_train_loss:.4f} - Val Loss: {avg_val_loss:.4f}")
@@ -162,5 +172,5 @@ if __name__ == "__main__":
     args = add_runtime_args()
     run_program(args)
 
-
+# python -m pose2.main --lr 0.001 --bs 16 --epochs 2 --mod res18
 

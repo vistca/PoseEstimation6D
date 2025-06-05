@@ -21,8 +21,9 @@ class BB8Model_2(nn.Module):
     def get_dimension(self):
         return (224, 224)
 
-    def forward(self, x):
-        features = self.backbone(x)
+    def forward(self, inputs):
+        images = inputs["rgb"]
+        features = self.backbone(images)
         bbox_pred = self.bbox_head(features)
         return bbox_pred
     

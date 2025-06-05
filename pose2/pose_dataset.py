@@ -1,6 +1,7 @@
 import os
 from torch.utils.data import Dataset
 from torchvision import transforms
+import torchvision.transforms.v2 as transforms_v2
 import torch
 import yaml
 from PIL import Image
@@ -49,6 +50,8 @@ class LinemodDataset(Dataset):
         # This transform is applied to the *cropped* image in __getitem__
         self.transform = transforms.Compose([
             transforms.ToTensor(),
+            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+            transforms_v2.GaussianNoise(mean=0., sigma=0.1),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
         # This transform is for the *original* image if needed unnormalized
