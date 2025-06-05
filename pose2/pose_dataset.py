@@ -51,7 +51,7 @@ class LinemodDataset(Dataset):
         self.transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
-            transforms_v2.GaussianNoise(mean=0., sigma=0.1),
+            #transforms_v2.GaussianNoise(mean=0., sigma=0.1),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
         # This transform is for the *original* image if needed unnormalized

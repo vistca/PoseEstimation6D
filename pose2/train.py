@@ -15,6 +15,7 @@ class Trainer():
 
         total_loss = 0.0
         nr_batches = 0
+        self.model.train()
 
         progress_bar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{self.args.epochs} - Train", ncols=100)
 
