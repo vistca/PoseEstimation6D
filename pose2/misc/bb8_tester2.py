@@ -11,9 +11,9 @@ import time
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model_name = "bb8_mod_1"
+model_name = "add_30_BB8Model"
 
-id = "8"
+id = "5"
 dir = (2-len(id)) * "0" + id
 nr = "230"
 img_nr = "0" * (4 - len(nr))
@@ -132,7 +132,7 @@ pred_rot_matrix, _ = cv2.Rodrigues(pred_rvec)
 
 end = time.perf_counter()
 
-print(f"Time to PnP: {int(1000*(end-start))}ms")
+print(f"Time to PnP: {end-start}s")
 
 pred_t = torch.tensor(pred_pos, dtype=torch.float32).T.squeeze()
 pred_R = torch.tensor(pred_rot_matrix, dtype=torch.float32)

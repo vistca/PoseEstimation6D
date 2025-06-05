@@ -9,38 +9,25 @@ from sklearn.model_selection import train_test_split
 import cv2
 from tqdm import tqdm
 
-class PoseDataset(Dataset):
-    def __init__(self, dataset_root, split_ratio, dimensions, split='train', seed=42):
+# --- LinemodDataset Class Definition ---
+# This class is included here to make the code self-contained,
+# as it was defined in a previous turn and is used by the training function.
+class LinemodDataset(Dataset):
+    def __init__(self, dataset_root, split='train', train_ratio=0.8, seed=42):
         self.dataset_root = dataset_root
         self.split = split
-        self.split_ratio = split_ratio
-        self.dimensions = dimensions
+        self.train_ratio = train_ratio
         self.seed = seed
         self.samples = self.get_all_samples()
 
         if not self.samples:
             raise ValueError(f"No samples found in {self.dataset_root}.")
 
-        # Split into training and test sets
         self.train_samples, self.test_samples = train_test_split(
-            self.samples, train_size=(1-self.split_ratio['test_%']), random_state=self.seed
-        )
-        
-        adjusted_train_perc = self.split_ratio['train_%'] / (self.split_ratio['train_%'] + self.split_ratio['val_%'])
-
-        self.train_samples, self.val_samples = train_test_split(
-            self.train_samples, train_size=adjusted_train_perc, random_state=42
+            self.samples, train_size=self.train_ratio, random_state=self.seed
         )
 
-        # Select the appropriate split
-        if self.split == "train":
-            self.samples = self.train_samples
-        elif self.split == "val":
-            self.samples = self.val_samples
-        else:
-            self.samples = self.test_samples
-
-        print(f"Nr samples {len(self.samples)} for {self.split}")
+        self.samples = self.train_samples if split == 'train' else self.test_samples
 
         # This transform is applied to the *cropped* image in __getitem__
         self.transform = transforms.Compose([
@@ -239,7 +226,7 @@ class PoseDataset(Dataset):
         y_max = min(original_img_pil.height, y_max + pad_y)
 
         cropped_pil = original_img_pil.crop((x_min, y_min, x_max, y_max))
-        cropped_resized_pil = transforms.Resize(self.dimensions)(cropped_pil)
+        cropped_resized_pil = transforms.Resize((224, 224))(cropped_pil)
 
         # Apply the dataset's transform (ToTensor, Normalize) to the cropped image
         cropped_tensor = self.transform(cropped_resized_pil)
@@ -260,3 +247,34 @@ class PoseDataset(Dataset):
             "translation": torch.tensor(translation),
             "camera_matrix": torch.tensor(camera_matrix),
         }
+    
+    # ##
+# # Data transformations (These are now primarily used by the LinemodDataset's internal `self.transform`)
+# train_transform = transforms.Compose([
+#     transforms.Resize((224, 224)),
+#     transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+#     transforms.ToTensor(),
+#     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+# ])
+
+# val_transform = transforms.Compose([
+#     transforms.Resize((224, 224)),
+#     transforms.ToTensor(),
+#     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+# ])
+
+# # Create datasets and dataloaders
+# def create_dataloaders(data_dir, batch_size=16):
+#     # The LinemodDataset's __init__ already sets up its internal transforms.
+#     # The `train_transform` and `val_transform` defined globally are not directly passed here,
+#     # but the dataset's internal logic handles the transformations.
+#     train_dataset = LinemodDataset(data_dir, split='train')
+#     val_dataset = LinemodDataset(data_dir, split='test')
+
+#     # num_workers=4 is a reasonable default for Colab. multiprocessing.cpu_count() might be too high
+#     # if it leads to excessive memory usage or context switching overhead.
+#     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True, prefetch_factor=4)
+#     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True, prefetch_factor=4)
+
+#     return train_loader, val_loader
+# ##
