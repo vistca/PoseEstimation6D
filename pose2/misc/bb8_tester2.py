@@ -11,7 +11,8 @@ import time
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model_name = "add_30_BB8Model"
+#model_name = "add_30_BB8Model"
+model_name = "res50_1"
 
 id = "5"
 dir = (2-len(id)) * "0" + id
@@ -25,6 +26,7 @@ info_path = "./datasets/Linemod_preprocessed/data/" + dir + "/"
 image_name = img_nr + ".png"
 json_name = "gt.json"
 
+#model = BB8Model_1()
 model = BB8Model_2()
 
 img = Image.open(img_path + image_name).convert("RGB")
@@ -65,8 +67,10 @@ model.eval()
 
 
 input_img = transform(crop)
+inputs  = {}
+inputs["rgb"] = input_img.unsqueeze(0)
 
-pred_points = model(input_img.unsqueeze(0))
+pred_points = model(inputs)
 pred_points = pred_points.squeeze(0)
 
 
