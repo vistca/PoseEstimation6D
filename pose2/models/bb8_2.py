@@ -15,10 +15,10 @@ class BB8Model_2(nn.Module):
             nn.Linear(in_channels, 512),  # ResNet50 feature size = 2048
             nn.ReLU(),
             nn.Dropout(p=0.2),
-            nn.Linear(256, 256),
+            nn.Linear(512, 256),
             nn.ReLU(),
             nn.Dropout(p=0.2),
-            nn.Linear(256, 12) # 8 points * 2 coordinates
+            nn.Linear(256, 16) # 8 points * 2 coordinates
         )
 
         # Cache for 3D models (not used by BB8Model itself, but kept for potential future use)
