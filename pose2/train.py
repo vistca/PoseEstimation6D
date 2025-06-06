@@ -23,10 +23,10 @@ class Trainer():
 
             inputs = {}
             inputs["rgb"] = batch["rgb"].to(device)
-            inputs["bbox"] = batch["bbox"].to(device)
-            inputs["obj_id"] = batch["obj_id"].to(device).long()
+            #inputs["bbox"] = batch["bbox"].to(device)
+            #inputs["obj_id"] = batch["obj_id"].to(device).long()
 
-            pred_points = self.model(inputs) # Forward pass: predict 2D points and ignore symmetry output
+            pred_points = self.model(inputs["rgb"]) # Forward pass: predict 2D points and ignore symmetry output
 
             targets = batch['points_2d'].to(device)
 

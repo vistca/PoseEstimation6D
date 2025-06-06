@@ -1,130 +1,95 @@
-from tqdm import tqdm
-import time
-import statistics
+from pose2.utils.models_points import get_ply_files
+from pose2.utils.data_reconstruction import reconstruct_3d_points_from_pred, rescale_pred
+from pose2.utils.add_calc import compute_ADD
 import torch
-from torchmetrics.detection.mean_ap import MeanAveragePrecision
-import numpy as np
-from plyfile import PlyData
+from tqdm import tqdm
 
 class Tester():
 
-    def __init__(self, model):
+    def __init__(self, model, epochs):
         self.model = model
         self.loss_fn = torch.nn.MSELoss()
+        self.num_epochs = epochs
+        self.ply_objs = get_ply_files()
 
-    def compute_ADD(self, model_points, R_gt, t_gt, R_pred, t_pred):
-      pts_gt = torch.matmul(R_gt, model_points.T).T + t_gt.view(1, 3)
-      pts_pred = torch.matmul(R_pred, model_points.T).T + t_pred.view(1, 3)
-
-      distances = torch.norm(pts_gt - pts_pred, dim=1)
-      return torch.mean(distances).item()
-
-    def load_model_points(self, ply_path, dtype=torch.float32):
-        plydata = PlyData.read(ply_path)
-        vertex_data = plydata['vertex']
-        model_points_np = np.stack([vertex_data['x'], vertex_data['y'], vertex_data['z']], axis=-1)
-        model_points = torch.tensor(model_points_np, dtype=dtype)
-        return model_points
-    
-    def get_ply_file(self, obj_id):
-        if (obj_id < 10):
-            return "obj_0" + str(obj_id) + ".ply"
-        return "obj_" + str(obj_id) + ".ply"
-
-    def get_ply_files(self):
-        folder_path = "datasets/Linemod_preprocessed/models/"
-        ply_objs = {}
-        for i in range (1,16):
-          file_name = "obj_"
-          if i < 10:
-            file_name = file_name + "0"
-          file_name = file_name + str(i) + ".ply"
-          ply_objs[i] = self.load_model_points(folder_path + file_name)
-        return ply_objs
-
-    def validate(self, dataloader, device, type):
-
-        self.model.eval()
+    def validate(self, val_loader, device, type="Val"):
+        # Validation phase
+        self.model.eval() # Set model to evaluation mode        
         val_loss = 0.0
-
-        print(f"Starting {type}...")
-        progress_bar = tqdm(dataloader, desc=type, ncols=100)
+        nr_batches = 0
         add_total = [0,0]
         add_objects = {}
 
-        ply_objs = self.get_ply_files()
+        with torch.no_grad(): # Disable gradient calculation for validation
+            if type == "Val":
+                desc = f"Val"
+            else:
+                desc = "Test"
+            progress_bar = tqdm(val_loader, desc=desc, ncols=100)
 
-        with torch.no_grad():
             for batch_id, batch in enumerate(progress_bar):
 
-                nr_datapoints = batch["rgb"].shape[0]
-                targets = torch.empty(nr_datapoints, 12, device=device)
-                inputs = []
+                inputs = {}
+                inputs["rgb"] = batch["rgb"].to(device)
+                inputs["depth"] = batch["depth"].to(device)
+                inputs["bbox"] = batch["bbox"].to(device)
+                inputs["obj_id"] = batch["obj_id"].to(device).long()
 
-                # We must be able to improve/remove this loop                
-                for i in range(nr_datapoints):
-                    translation = batch["translation"][i].to(device).unsqueeze(0) # Add batch dimension
-                    rotation = batch["rotation"][i].to(device).flatten().unsqueeze(0) # Add batch dimension    
-                    target = torch.cat((translation, rotation), dim=1)
-                    targets[i] = target            
+                pred_points = self.model(inputs) # Forward pass
+
+                targets = batch['points_2d'].to(device)
+
+                # Removed the redundant loop for selected_preds
+                loss = self.loss_fn(pred_points, targets) # Calculate validation loss
+                val_loss += loss.item() # Accumulate validation loss
+                nr_batches += 1
+
+                progress_bar.set_postfix(total=val_loss/nr_batches)
+
+                bboxes = batch["bbox"]
+                nr_datapoints = bboxes.shape[0]
+                pred_points = rescale_pred(pred_points, bboxes, nr_datapoints)
                 
+                ids = batch["obj_id"]
+
+                models_points_3d = batch["points_3d"] 
+                gts_t = batch["translation"]
+                gts_R = batch["rotation"]
+
+                reconstruction_3d = reconstruct_3d_points_from_pred(pred_points, models_points_3d, nr_datapoints)
+
                 for i in range(nr_datapoints):
-                    input = {}
-                    input["rgb"] = batch["rgb"][i].to(device).unsqueeze(0) # Add batch dimension
-                    input["bbox"] = batch["bbox"][i].to(device).unsqueeze(0)  # Add batch dimension
-                    input["obj_id"] = batch["obj_id"][i].to(device).long().unsqueeze(0)  # Add batch dimension
-                    input["depth"] = batch["depth"][i].to(device).unsqueeze(0)  # Add batch dimension
-                    inputs.append(input)
 
-                # Forward pass
+                    pred_t = reconstruction_3d[i, :3]
+                    pred_R = reconstruction_3d[i, 3:].reshape((3,3))
 
-                # weird quirk with eval() only returning predictions. Probably
-                # bad practice to elvaluate in train() mode.
+                    gt_t = gts_t[i]
+                    gt_R = gts_R[i].reshape((3,3))
 
-                # doing it like this takes forever, might need to check this and update it accordingly
+                    model_points = self.ply_objs[int(ids[i].item()+1)]
 
-                preds = self.model.forward(inputs)
+                    add = compute_ADD(model_points, gt_R, gt_t, pred_R, pred_t)
 
-                #print(type(loss_dict), loss_dict)  # Debugging output
-                loss = self.loss_fn(preds, targets)
-
-                # Calculate the ADD metric
-                models_folder = "./datasets/Linemod_preprocessed/models/"
-                for i in range(nr_datapoints):
-                    pred = preds[i]
-                    gt = targets[i]
-                    t_pred = pred[:3].reshape(3,1).to(device)
-                    R_pred = pred[3:].reshape(3,3).to(device)
-                    t_gt = gt[:3].reshape(3,1).to(device)
-                    R_gt = gt[3:].reshape(3,3).to(device)
-                    obj_id = int(batch["obj_id"][i].item())
-                    ply_file = self.get_ply_file(obj_id)
-                    model_points = ply_objs[obj_id].to(device)
-                    add = self.compute_ADD(model_points, R_gt, t_gt, R_pred, t_pred)
-                    #print("The add is: " + str(add))
-                    add_obj = add_objects.get(str(obj_id))
+                    add_obj = add_objects.get(str(int(ids[i].item()+1)))
                     if not add_obj:
-                      new_count = 1
-                      new_val = add
+                        new_count = 1
+                        new_val = add
                     else:
-                      new_count = add_obj[0] + 1
-                      new_val = add_obj[1] + add
-                    add_objects[str(obj_id)] = [new_count, new_val]
+                        new_count = add_obj[0] + 1
+                        new_val = add_obj[1] + add
+                    add_objects[str(int(ids[i].item()+1))] = [new_count, new_val]
                     add_total = [add_total[0] + 1, add_total[1] + add]
-                val_loss += loss
-
-                progress_bar.set_postfix(total=val_loss/(batch_id + 1))
 
 
-        avg_loss = val_loss / len(dataloader)
+        avg_val_loss = val_loss / len(val_loader)
         avg_add_total = add_total[1] / add_total[0]
-        for k,v in add_objects.items():
-          avg_add_obj = v[1] / v[0]
-          print(f"Obj: {k}, Avg ADD: {avg_add_obj}")
-        print(f"Total average ADD: {avg_add_total}")
         
+        for k,v in add_objects.items():
+            avg_add_obj = v[1] / v[0]
+            print(f"Obj: {k}, Avg ADD: {avg_add_obj}, num obj: {v[0]}")
+        print(f"Total average ADD: {avg_add_total}")
+
         return {
-                f"{type} total_loss" : avg_loss,
-                f"{type} total ADD" : avg_add_total
-            }, avg_loss
-    
+                f"{type} total_loss" : avg_val_loss,
+                f"{type} total_ADD" : avg_add_total
+            }, avg_add_total

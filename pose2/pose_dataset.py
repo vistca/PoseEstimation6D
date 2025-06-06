@@ -237,14 +237,14 @@ class PoseEstDataset(Dataset):
         #img = img.resize(self.dimensions)
         
         #If we want to visialize the img crop
-        draw = ImageDraw.Draw(img)
-        font = ImageFont.load_default()
-        text = img_path
-        position = (10, 10)
-        draw.text(position, text, fill=(128, 0, 128), font=font)
-        plt.imshow(img)
-        plt.axis("off")
-        plt.show()
+        #draw = ImageDraw.Draw(img)
+        #font = ImageFont.load_default()
+        #text = img_path
+        #position = (10, 10)
+        #draw.text(position, text, fill=(128, 0, 128), font=font)
+        #plt.imshow(img)
+        #plt.axis("off")
+        #plt.show()
 
         if self.split == "train":
             return self.train_transform(img)
@@ -257,12 +257,13 @@ class PoseEstDataset(Dataset):
         depth = self.rgb_crop_img(depth, bbox, padding)
         
         # If we want to visualize the depth crop
-        plt.imshow(depth)
-        plt.axis("off")
-        plt.show()
+        #plt.imshow(depth)
+        #plt.axis("off")
+        #plt.show()
 
         depth = depth.resize(self.dimensions)
-        depth = transforms.functional.pil_to_tensor(depth)
+        depth = np.array(depth).astype(np.float32)
+        depth = torch.from_numpy(depth)
         return depth
 
     
@@ -307,6 +308,7 @@ class PoseEstDataset(Dataset):
     
         cropped_tensor = self.load_image(img_path, bbox, 0.2)
         depth_data = self.load_depth(depth_path, bbox, 0.2)
+        depth_data = depth_data.unsqueeze(0)
 
         points_3d = self.get_3d_bbox_points(obj_id)
 

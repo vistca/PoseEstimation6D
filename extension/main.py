@@ -8,7 +8,8 @@ from .models.resnet import CustomResNet50
 from .models.combined_model import CombinedModel
 from timm.data.loader import MultiEpochsDataLoader
 from prep_data import download_data, yaml_to_json
-from .data.extension_dataset import ExtensionDataset
+#from .data.extension_dataset import ExtensionDataset
+from pose2.pose_dataset import PoseEstDataset
 from .test import Tester
 from .train import Trainer
 
@@ -31,7 +32,7 @@ def run_program(args):
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    model = CombinedModel(device)
+    model = CombinedModel(device, args.mod)
 
     # TODO: should look at this loading, does it load the entire model for pose or just the resnet part?
     if args.lm != "":
@@ -52,8 +53,8 @@ def run_program(args):
     schedulerloader = ScheduleLoader(optimizer, args.scheduler, args.bs, 9479)
     scheduler = schedulerloader.get_scheduler()
 
-    trainer = Trainer(model, optimizer, wandb_instance, scheduler)
-    tester = Tester(model)
+    trainer = Trainer(model, optimizer, args)#, wandb_instance, scheduler)
+    tester = Tester(model, args.epochs)
 
     tth = TTH(model,optimizer, 
               wandb_instance, args.epochs,
@@ -71,9 +72,9 @@ def run_program(args):
                         }
 
     
-    train_dataset = ExtensionDataset(dataset_root, split_percentage, model.get_dimensions(), split="train")
-    test_dataset = ExtensionDataset(dataset_root, split_percentage,  model.get_dimensions(), split="test")
-    val_dataset = ExtensionDataset(dataset_root, split_percentage,  model.get_dimensions(), split="val")
+    train_dataset = PoseEstDataset(dataset_root, split_percentage, model.get_dimensions(), split="train")
+    test_dataset = PoseEstDataset(dataset_root, split_percentage,  model.get_dimensions(), split="test")
+    val_dataset = PoseEstDataset(dataset_root, split_percentage,  model.get_dimensions(), split="val")
     
     train_loader = MultiEpochsDataLoader(train_dataset, batch_size=args.bs, 
                                          shuffle=True, num_workers=args.w)
