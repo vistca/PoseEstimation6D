@@ -31,16 +31,24 @@ model = BB8Model_2()
 
 img = Image.open(img_path + image_name).convert("RGB")
 
-pose_data = {}
+pose_datas = {}
 
 with open(info_path + json_name, 'r') as f:
-    pose_data = json.load(f)
+    pose_datas = json.load(f)
+
+poses = pose_datas[nr]
+
+pose_data = None
+for temp_pose in poses:
+    if temp_pose['obj_id'] == int(id):
+        pose_data = temp_pose
+
 
 with open(model_file_path, 'r') as f:
     models_info = json.load(f) 
 
 # [x_left, y_top, x_width, y_height]
-bbox = pose_data[nr][0]["obj_bb"] # bounding box
+bbox = pose_data["obj_bb"] # bounding box
 
 x_min, y_min, width, height = bbox
 x_max = x_min + width
@@ -149,8 +157,8 @@ pred_R = torch.tensor(pred_rot_matrix, dtype=torch.float32)
 print(pred_t)
 print(pred_R)
 
-gt_t = torch.tensor(pose_data[nr][0]["cam_t_m2c"], dtype=torch.float32)
-gt_R = torch.tensor(pose_data[nr][0]["cam_R_m2c"], dtype=torch.float32).reshape((3,3))
+gt_t = torch.tensor(pose_data["cam_t_m2c"], dtype=torch.float32)
+gt_R = torch.tensor(pose_data["cam_R_m2c"], dtype=torch.float32).reshape((3,3))
 
 print(gt_t)
 print(gt_R)
