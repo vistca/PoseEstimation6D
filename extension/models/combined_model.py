@@ -36,6 +36,8 @@ class CombinedModel(nn.Module):
             self.pose_model.backbone.conv1 = nn.Identity()
         except:
             raise("The model isn't compatible, name the pretrained model: backbone")
+        
+        self.pose_model = self.pose_model.to(device)
 
         #layer_name = module_name.split(".")[-1]
         #parent_name = module_name.replace(layer_name, "")
