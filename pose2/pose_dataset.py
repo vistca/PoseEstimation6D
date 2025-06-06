@@ -9,11 +9,13 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 import cv2
 from tqdm import tqdm
+from PIL import Image, ImageDraw, ImageFont
+import matplotlib.pyplot as plt
 
 # --- LinemodDataset Class Definition ---
 # This class is included here to make the code self-contained,
 # as it was defined in a previous turn and is used by the training function.
-class LinemodDataset(Dataset):
+class PoseEstDataset(Dataset):
     def __init__(self, dataset_root, split_ratio, dimensions, split='train', seed=42):
         self.dataset_root = dataset_root
         self.split = split
@@ -47,12 +49,25 @@ class LinemodDataset(Dataset):
             self.samples = self.test_samples
 
 
-        # This transform is applied to the *cropped* image in __getitem__
-        self.transform = transforms.Compose([
+        # Define image transformations
+        self.train_transform = transforms.Compose([
+            transforms.Resize(self.dimensions),
             transforms.ToTensor(),
             transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
-            #transforms_v2.GaussianNoise(mean=0., sigma=0.1),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
+
+        self.val_test_transform = transforms.Compose([
+            transforms.Resize(self.dimensions),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])
+        ])
+
+
+        # This transform is applied to the *cropped* image in __getitem__
+        self.transform = transforms.Compose([
+            
         ])
         # This transform is for the *original* image if needed unnormalized
         self.to_tensor_only = transforms.ToTensor()
@@ -152,7 +167,7 @@ class LinemodDataset(Dataset):
             if temp_pose['obj_id'] == int(folder_id):
                 pose = temp_pose
         
-        [0] # <--- point of concern
+        #[0] # <--- point of concern
         translation = np.array(pose['cam_t_m2c'], dtype=np.float32)
         rotation = np.array(pose['cam_R_m2c'], dtype=np.float32).reshape(3, 3)
         bbox = np.array(pose['obj_bb'], dtype=np.float32)
@@ -214,6 +229,56 @@ class LinemodDataset(Dataset):
         # Normalize between 0 and 1 with respect to the bounding box
         points_norm = (points_2d - np.array([x_min, y_min])) / np.array([width, height])
         return points_norm.astype(np.float32).flatten()
+    
+    def load_image(self, img_path, bbox, padding=0.1):
+        """Load an RGB image and convert to tensor."""
+        img = Image.open(img_path).convert("RGB")
+        img = self.rgb_crop_img(img, bbox, padding)
+        #img = img.resize(self.dimensions)
+        
+        #If we want to visialize the img crop
+        draw = ImageDraw.Draw(img)
+        font = ImageFont.load_default()
+        text = img_path
+        position = (10, 10)
+        draw.text(position, text, fill=(128, 0, 128), font=font)
+        plt.imshow(img)
+        plt.axis("off")
+        plt.show()
+
+        if self.split == "train":
+            return self.train_transform(img)
+        
+        return self.val_test_transform(img)
+    
+    def load_depth(self, depth_path, bbox, padding=0.1):
+        """Load a depth image and convert to tensor."""
+        depth = Image.open(depth_path)
+        depth = self.rgb_crop_img(depth, bbox, padding)
+        
+        # If we want to visualize the depth crop
+        plt.imshow(depth)
+        plt.axis("off")
+        plt.show()
+
+        depth = depth.resize(self.dimensions)
+        depth = transforms.functional.pil_to_tensor(depth)
+        return depth
+
+    
+    def rgb_crop_img(self, rgb_img, b, m): # b is the bounding box for the image and m is the wanted margin
+        # b = [x_left, y_top, x_width, y_height]
+        x_min, y_min, x_max, y_max = map(int, b)
+
+        pad_x = int(m * (x_max - x_min))
+        pad_y = int(m * (y_max - y_min))
+
+        x_min = max(0, x_min - pad_x)
+        y_min = max(0, y_min - pad_y)
+        x_max = min(rgb_img.width, x_max + pad_x)
+        y_max = min(rgb_img.height, y_max + pad_y)
+
+        return rgb_img.crop((x_min , y_min, x_max, y_max))
 
     def __len__(self):
         return len(self.samples)
@@ -224,9 +289,7 @@ class LinemodDataset(Dataset):
         camera_matrix = np.array(camera_intrinsics[0]['cam_K']).reshape(3, 3)
 
         img_path = os.path.join(self.dataset_root, 'data', f"{folder_id:02d}", f"rgb/{sample_id:04d}.png")
-
-        # Load original image as PIL Image once
-        original_img_pil = Image.open(img_path).convert("RGB")
+        depth_path = os.path.join(self.dataset_root, 'data', f"{folder_id:02d}", f"depth/{sample_id:04d}.png")
 
         translation, rotation, bbox, obj_id = self.load_6d_pose(folder_id, sample_id)
 
@@ -240,68 +303,21 @@ class LinemodDataset(Dataset):
         else:
             points_norm = self.points2d_cache[cache_key]
 
-        # Crop the image using the bounding box with padding directly on PIL Image
-        x_min, y_min, x_max, y_max = map(int, bbox)
 
-        # Add 20% padding
-        pad_x = int(0.2 * (x_max - x_min))
-        pad_y = int(0.2 * (y_max - y_min))
-
-        x_min = max(0, x_min - pad_x)
-        y_min = max(0, y_min - pad_y)
-        x_max = min(original_img_pil.width, x_max + pad_x)
-        y_max = min(original_img_pil.height, y_max + pad_y)
-
-        cropped_pil = original_img_pil.crop((x_min, y_min, x_max, y_max))
-        cropped_resized_pil = transforms.Resize(self.dimensions)(cropped_pil)
-
-        # Apply the dataset's transform (ToTensor, Normalize) to the cropped image
-        cropped_tensor = self.transform(cropped_resized_pil)
-
-        # For 'original_img' output, apply ToTensor to the uncropped, unnormalized PIL image
-        original_img_tensor = self.to_tensor_only(original_img_pil)
+    
+        cropped_tensor = self.load_image(img_path, bbox, 0.2)
+        depth_data = self.load_depth(depth_path, bbox, 0.2)
 
         points_3d = self.get_3d_bbox_points(obj_id)
 
         return {
             "rgb": cropped_tensor,
+            "depth": depth_data,
             "points_2d": torch.tensor(points_norm),
             "points_3d": torch.tensor(points_3d),
             "obj_id": torch.tensor(obj_id - 1),  # Convert to 0-based index
-            "original_img": original_img_tensor,
             "bbox": torch.tensor(bbox),
             "rotation": torch.tensor(rotation),
             "translation": torch.tensor(translation),
             "camera_matrix": torch.tensor(camera_matrix),
         }
-    
-    # ##
-# # Data transformations (These are now primarily used by the LinemodDataset's internal `self.transform`)
-# train_transform = transforms.Compose([
-#     transforms.Resize((224, 224)),
-#     transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
-#     transforms.ToTensor(),
-#     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-# ])
-
-# val_transform = transforms.Compose([
-#     transforms.Resize((224, 224)),
-#     transforms.ToTensor(),
-#     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-# ])
-
-# # Create datasets and dataloaders
-# def create_dataloaders(data_dir, batch_size=16):
-#     # The LinemodDataset's __init__ already sets up its internal transforms.
-#     # The `train_transform` and `val_transform` defined globally are not directly passed here,
-#     # but the dataset's internal logic handles the transformations.
-#     train_dataset = LinemodDataset(data_dir, split='train')
-#     val_dataset = LinemodDataset(data_dir, split='test')
-
-#     # num_workers=4 is a reasonable default for Colab. multiprocessing.cpu_count() might be too high
-#     # if it leads to excessive memory usage or context switching overhead.
-#     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True, prefetch_factor=4)
-#     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True, prefetch_factor=4)
-
-#     return train_loader, val_loader
-# ##

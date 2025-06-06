@@ -1,5 +1,5 @@
 from utils.runtime_args import add_runtime_args
-from pose2.pose_dataset import LinemodDataset
+from pose2.pose_dataset import PoseEstDataset
 import os
 from torch.utils.data import DataLoader
 import torch
@@ -44,9 +44,9 @@ def run_program(args):
                         "val_%" : config_dict["val_%"],
                         }
     
-    train_dataset = LinemodDataset(dataset_root, split_percentage, model.get_dimension(), split="train")
-    test_dataset = LinemodDataset(dataset_root, split_percentage, model.get_dimension(), split="test")
-    val_dataset = LinemodDataset(dataset_root, split_percentage, model.get_dimension(), split="val")
+    train_dataset = PoseEstDataset(dataset_root, split_percentage, model.get_dimension(), split="train")
+    test_dataset = PoseEstDataset(dataset_root, split_percentage, model.get_dimension(), split="test")
+    val_dataset = PoseEstDataset(dataset_root, split_percentage, model.get_dimension(), split="val")
 
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=2)
