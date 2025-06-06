@@ -58,7 +58,7 @@ def run_program(args):
 
     tth = TTH(model,optimizer, 
               wandb_instance, args.epochs,
-              trainer, tester
+              trainer, tester, "./2dBox"
               )
 
     dataset_root = args.data + "/Linemod_preprocessed"
@@ -88,7 +88,7 @@ def run_program(args):
 
 
     tth.train_test_val_model(train_loader, val_loader, test_loader,
-                             device, runtime_dir_path + args.sm, args.test)
+                             device, args.sm, args.test)
 
 
 if __name__ == "__main__":
