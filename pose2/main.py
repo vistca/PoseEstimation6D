@@ -7,6 +7,7 @@ import torch.nn as nn
 import numpy as np
 from tqdm import tqdm
 import yaml
+from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 
 
 from utils.optimizer_loader import OptimLoader
@@ -61,6 +62,8 @@ def run_program(args):
 
     trainer = Trainer(model, optimizer, args)
     tester = Tester(model, args)
+    scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=5)
+    #scheduler = ReduceLROnPlateau(optimizer, patience=3, threshold = 5e-3)
 
     best_val_loss = float('inf')
 
@@ -76,8 +79,6 @@ def run_program(args):
 
         print(f"Epoch {epoch+1}/{args.epochs} - Train Loss: {avg_train_loss:.4f} - Val Loss: {avg_val_loss:.4f}")
 
-
-        # ⭐ Saving "best" model
         if avg_val_loss < best_val_loss and args.sm != "":
             best_val_loss = avg_val_loss
             
@@ -88,6 +89,9 @@ def run_program(args):
             
             print("New best model saved.")
 
+        scheduler.step()
+        print(scheduler._last_lr[0])
+
     if args.test:
         test_results = tester.validate(test_loader, device, epoch, type="Test")
         avg_test_loss = test_results["Test total_loss"]
@@ -97,7 +101,6 @@ def run_program(args):
 
 
 if __name__ == "__main__":
-
     args = add_runtime_args()
     run_program(args)
 
