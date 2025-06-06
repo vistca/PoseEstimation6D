@@ -19,6 +19,7 @@ class Tester():
         self.model.eval() # Set model to evaluation mode        
         val_loss = 0.0
         nr_batches = 0
+        below_2cm = [0,0]
         add_total = [0,0]
         add_objects = {}
 
@@ -81,17 +82,24 @@ class Tester():
                     add_objects[str(int(ids[i].item()+1))] = [new_count, new_val]
                     add_total = [add_total[0] + 1, add_total[1] + add]
 
+                    below_2cm[1] = below_2cm[1] + 1
+                    if add < 20:
+                      below_2cm[0] = below_2cm[0] + 1
+
 
         avg_val_loss = val_loss / len(val_loader)
         avg_add_total = add_total[1] / add_total[0]
+        percentage_below_2cm = 100*below_2cm[0]/below_2cm[1]
         
         for k,v in add_objects.items():
             avg_add_obj = v[1] / v[0]
             print(f"Obj: {k}, Avg ADD: {avg_add_obj}, num obj: {v[0]}")
         print(f"Total average ADD: {avg_add_total}")
+        print(f"Percentage below 2cm : {percentage_below_2cm}")
 
         return {
                 f"{type} total_loss" : avg_val_loss,
-                f"{type} total_ADD" : avg_add_total
+                f"{type} total_ADD" : avg_add_total,
+                f"{type} below_2cm" : percentage_below_2cm
             }
 
