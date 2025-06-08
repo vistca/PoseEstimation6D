@@ -5,3 +5,5 @@ model = create_model("bb8_2")
 print(model)
 print("-"*25)
 
+print(model.backbone.layer1)
+

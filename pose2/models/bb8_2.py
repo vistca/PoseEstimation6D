@@ -9,7 +9,10 @@ class BB8Model_2(nn.Module):
         in_channels = self.backbone.fc.in_features
         self.backbone.fc = nn.Identity()  # We remove the final fully connected layer
 
-        for param in self.backbone.parameters():
+        for param in self.backbone.layer1.parameters():
+            param.requires_grad = False
+
+        for param in self.backbone.layer2.parameters():
             param.requires_grad = False
 
         # Head for predicting 2D points (8 corners * 2 coordinates)
