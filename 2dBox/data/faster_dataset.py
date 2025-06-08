@@ -150,7 +150,14 @@ class FasterDataset(Dataset):
             print(pose_data.keys())
             raise KeyError(f"Sample ID {sample_id} not found in gt.yml for folder {folder_id}.")
 
-        pose = pose_data[sample_id][0]  # There's only one pose per sample
+        
+        poses = pose_data[sample_id]
+        
+        pose = None # pose[0]
+        for temp_pose in poses:
+            if temp_pose['obj_id'] == int(folder_id):
+                pose = temp_pose
+        #pose = pose_data[sample_id][0]  # There's only one pose per sample
 
         # Extract translation and rotation
         translation = np.array(pose['cam_t_m2c'], dtype=np.float32)  # [3] ---> (x,y,z)
