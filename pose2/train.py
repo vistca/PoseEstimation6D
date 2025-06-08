@@ -11,13 +11,13 @@ class Trainer():
         self.args = args
 
 
-    def train_one_epoch(self, train_loader, device, epoch):
+    def train_one_epoch(self, train_loader, device):
 
         total_loss = 0.0
         nr_batches = 0
         self.model.train()
 
-        progress_bar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{self.args.epochs} - Train", ncols=100)
+        progress_bar = tqdm(train_loader, desc=f"Train", ncols=100)
 
         for batch_id, batch in enumerate(progress_bar):
 
@@ -26,7 +26,7 @@ class Trainer():
             #inputs["bbox"] = batch["bbox"].to(device)
             #inputs["obj_id"] = batch["obj_id"].to(device).long()
 
-            pred_points = self.model(inputs["rgb"]) # Forward pass: predict 2D points and ignore symmetry output
+            pred_points = self.model(inputs) # Forward pass: predict 2D points and ignore symmetry output
 
             targets = batch['points_2d'].to(device)
 

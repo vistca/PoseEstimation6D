@@ -17,12 +17,17 @@ from pose2.utils.add_calc import compute_ADD
 from pose2.models.model_creator import create_model
 from pose2.train import Trainer
 from pose2.test import Tester
+from utils.wandb_setup import WandbSetup
+from utils.scheduler_loader import ScheduleLoader
+from train_test_handler import TTH
 
 
 
 def run_program(args):
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    runtime_dir_path = os.path.dirname(os.path.abspath(__file__))
+    wandb_instance = WandbSetup(args, "PosePhase3")
 
     # Configuration
     dataset_root = "./datasets/Linemod_preprocessed/" # Ensure this path is correct relative to your Colab environment
@@ -60,49 +65,69 @@ def run_program(args):
     optimloader = OptimLoader(args.optimizer, model_params, args.lr)
     optimizer = optimloader.get_optimizer()
 
+    if args.lm != "":
+        try:
+            load_path = f"{runtime_dir_path}/checkpoints/{args.lm}.pt"
+            model.load_state_dict(torch.load(load_path, weights_only=True, map_location=device.type))
+            print("Model loaded")
+        except:
+                raise("Could not load the model, might be due to missmatching models or something else")
+
     trainer = Trainer(model, optimizer, args)
     tester = Tester(model, args)
-    scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=5)
+
+    schedulerloader = ScheduleLoader(optimizer, args.scheduler, args.bs, 11058)
+    scheduler = schedulerloader.get_scheduler()
+
+    #scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=5)
     #scheduler = ReduceLROnPlateau(optimizer, patience=3, threshold = 5e-3)
 
-    best_val_loss = float('inf')
+    tth = TTH(model,optimizer, 
+              wandb_instance, args.epochs,
+              trainer, tester, runtime_dir_path)
+    
+    tth.train_test_val_model(train_loader, val_loader, test_loader,
+                             device, args.sm, args.test)
 
-    for epoch in range(args.epochs):
+    # best_val_loss = float('inf')
 
-        train_results = trainer.train_one_epoch(train_loader, device, epoch)
+    # for epoch in range(args.epochs):
 
-        val_results = tester.validate(val_loader, device, epoch, type="Val")
+    #     train_results = trainer.train_one_epoch(train_loader, device, epoch)
 
-        avg_train_loss = train_results["Training total_loss"]
-        avg_val_loss = val_results["Val total_loss"]
-        avg_ADD = val_results["Val total_ADD"]
+    #     val_results = tester.validate(val_loader, device, epoch, type="Val")
 
-        print(f"Epoch {epoch+1}/{args.epochs} - Train Loss: {avg_train_loss:.4f} - Val Loss: {avg_val_loss:.4f}")
+    #     avg_train_loss = train_results["Training total_loss"]
+    #     avg_val_loss = val_results["Val total_loss"]
+    #     avg_ADD = val_results["Val total_ADD"]
 
-        if avg_val_loss < best_val_loss and args.sm != "":
-            best_val_loss = avg_val_loss
+    #     print(f"Epoch {epoch+1}/{args.epochs} - Train Loss: {avg_train_loss:.4f} - Val Loss: {avg_val_loss:.4f}")
+
+    #     if avg_val_loss < best_val_loss and args.sm != "":
+    #         best_val_loss = avg_val_loss
             
-            if os.path.exists(args.sm):
-                os.remove(args.sm)
-            save_path = f"./pose2/checkpoints/{args.sm}.pt"
-            torch.save(model.state_dict(), save_path)
+    #         if os.path.exists(args.sm):
+    #             os.remove(args.sm)
+    #         save_path = f"./pose2/checkpoints/{args.sm}.pt"
+    #         torch.save(model.state_dict(), save_path)
             
-            print("New best model saved.")
+    #         print("New best model saved.")
 
-        scheduler.step()
-        print(scheduler._last_lr[0])
+    #     scheduler.step()
+    #     print(scheduler._last_lr[0])
 
-    if args.test:
-        test_results = tester.validate(test_loader, device, epoch, type="Test")
-        avg_test_loss = test_results["Test total_loss"]
-        avg_test_ADD = test_results["Test total_ADD"]
-        print(f"Average test loss : {avg_test_loss}")
-        print(f"Average test ADD : {avg_test_ADD}")
+    # if args.test:
+    #     test_results = tester.validate(test_loader, device, epoch, type="Test")
+    #     avg_test_loss = test_results["Test total_loss"]
+    #     avg_test_ADD = test_results["Test total_ADD"]
+    #     print(f"Average test loss : {avg_test_loss}")
+    #     print(f"Average test ADD : {avg_test_ADD}")
 
 
 if __name__ == "__main__":
     args = add_runtime_args()
     run_program(args)
 
-# python -m pose2.main --lr 0.001 --bs 16 --epochs 2 --mod bb8_1 --test True
+# python -m pose2.main --lr 0.001 --bs 16 --epochs 2 --mod bb8_1 --test True --wb 2bb395cd06545f69d0a731a962237634b99915e2
+
 

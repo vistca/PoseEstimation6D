@@ -14,7 +14,7 @@ class Tester():
         self.ply_objs = get_ply_files()
 
 
-    def validate(self, val_loader, device, epoch=1, type="Val"):
+    def validate(self, val_loader, device, type="Val"):
         # Validation phase
         self.model.eval() # Set model to evaluation mode        
         val_loss = 0.0
@@ -25,10 +25,11 @@ class Tester():
 
         with torch.no_grad(): # Disable gradient calculation for validation
             if type == "Val":
-                desc = f"Epoch {epoch+1}/{self.args.epochs} - Val"
+                desc = f" Val"
             else:
                 desc = "Test"
             progress_bar = tqdm(val_loader, desc=desc, ncols=100)
+
 
             for batch_id, batch in enumerate(progress_bar):
 
@@ -37,7 +38,7 @@ class Tester():
                 #inputs["bbox"] = batch["bbox"].to(device)
                 #inputs["obj_id"] = batch["obj_id"].to(device).long()
 
-                pred_points = self.model(inputs["rgb"]) # Forward pass
+                pred_points = self.model(inputs) # Forward pass
 
                 targets = batch['points_2d'].to(device)
 
@@ -101,5 +102,5 @@ class Tester():
                 f"{type} total_loss" : avg_val_loss,
                 f"{type} total_ADD" : avg_add_total,
                 f"{type} below_2cm" : percentage_below_2cm
-            }
+            }, avg_add_total
 
