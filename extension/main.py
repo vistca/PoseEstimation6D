@@ -4,7 +4,6 @@ import yaml
 import torch
 from .models.depth_nn import DepthNN
 from .models.rgb_nn import RgbNN
-from .models.resnet import CustomResNet50
 from .models.combined_model import CombinedModel
 from timm.data.loader import MultiEpochsDataLoader
 from prep_data import download_data, yaml_to_json
