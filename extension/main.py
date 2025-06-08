@@ -49,10 +49,14 @@ def run_program(args):
     optimloader = OptimLoader(args.optimizer, model_params, args.lr)
     optimizer = optimloader.get_optimizer()
 
-    schedulerloader = ScheduleLoader(optimizer, args.scheduler, args.bs, 9479)
+    # This is just a small hack to get the restart after 10 epochs
+    bs = 3
+    sample_size = 10
+
+    schedulerloader = ScheduleLoader(optimizer, args.scheduler, bs, sample_size)
     scheduler = schedulerloader.get_scheduler()
 
-    trainer = Trainer(model, optimizer, args)#, wandb_instance, scheduler)
+    trainer = Trainer(model, optimizer, args, scheduler)#, wandb_instance, scheduler)
     tester = Tester(model, args.epochs)
 
     tth = TTH(model,optimizer, 
