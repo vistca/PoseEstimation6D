@@ -73,14 +73,11 @@ def run_program(args):
         except:
                 raise("Could not load the model, might be due to missmatching models or something else")
 
-    trainer = Trainer(model, optimizer, args)
-    tester = Tester(model, args)
-
-    schedulerloader = ScheduleLoader(optimizer, args.scheduler, args.bs, 11058)
+    schedulerloader = ScheduleLoader(optimizer, args.scheduler, args.bs, 11058, 2)
     scheduler = schedulerloader.get_scheduler()
 
-    #scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=5)
-    #scheduler = ReduceLROnPlateau(optimizer, patience=3, threshold = 5e-3)
+    trainer = Trainer(model, optimizer, args, scheduler)
+    tester = Tester(model, args)
 
     tth = TTH(model,optimizer, 
               wandb_instance, args.epochs,
@@ -128,6 +125,6 @@ if __name__ == "__main__":
     args = add_runtime_args()
     run_program(args)
 
-# python -m pose2.main --lr 0.001 --bs 16 --epochs 2 --mod bb8_1 --test True --wb 2bb395cd06545f69d0a731a962237634b99915e2
+# python -m pose2.main --lr 0.001 --bs 16 --epochs 3 --mod bb8_1 --test True --wb 2bb395cd06545f69d0a731a962237634b99915e2 --scheduler CosineAnnealingWarmRestarts
 
 

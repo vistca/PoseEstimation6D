@@ -4,11 +4,12 @@ from tqdm import tqdm
 
 class Trainer():
 
-    def __init__(self, model, optimizer, args):
+    def __init__(self, model, optimizer, args, scheduler):
         self.model = model
         self.optimizer = optimizer
         self.loss_fn = torch.nn.MSELoss()
         self.args = args
+        self.scheduler = scheduler
 
 
     def train_one_epoch(self, train_loader, device):
@@ -43,8 +44,14 @@ class Trainer():
 
 
         avg_loss = total_loss / len(train_loader)
+
+        if self.scheduler.__class__.__name__ == "ReduceLROnPlateau":
+            self.scheduler.step(loss)
+        else:
+            self.scheduler.step()
   
         return {
             "Training total_loss" : avg_loss,
+            "Learning rate" : self.scheduler._last_lr[0]
         }
     
