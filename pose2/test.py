@@ -22,6 +22,8 @@ class Tester():
         below_2cm = [0,0]
         add_total = [0,0]
         add_objects = {}
+        dia_10_objects = {}
+        below_dia = [0,0]
 
         with torch.no_grad(): # Disable gradient calculation for validation
             if type == "Val":
@@ -54,6 +56,7 @@ class Tester():
                 pred_points = rescale_pred(pred_points, bboxes, nr_datapoints)
                 
                 ids = batch["obj_id"]
+                diameters = batch["diameter"]
 
                 models_points_3d = batch["points_3d"] 
                 gts_t = batch["translation"]
@@ -85,22 +88,43 @@ class Tester():
 
                     below_2cm[1] = below_2cm[1] + 1
                     if add < 20:
-                      below_2cm[0] = below_2cm[0] + 1
+                        below_2cm[0] = below_2cm[0] + 1
+
+                    dia_10_object = dia_10_objects.get(str(int(ids[i].item()+1)))
+                    diameter = diameters[i]
+                    new_low = 1 if add < 0.1*diameter else 0
+                    if not dia_10_object:
+                        new_count = 1
+                        new_val = new_low
+                    else:
+                        new_count = dia_10_object[0] + 1
+                        new_val = dia_10_object[1] + new_low
+                    dia_10_objects[str(int(ids[i].item()+1))] = [new_count, new_val]
+                    below_dia = [below_dia[0] + new_low, below_dia[1] + 1]
 
 
         avg_val_loss = val_loss / len(val_loader)
         avg_add_total = add_total[1] / add_total[0]
         percentage_below_2cm = 100*below_2cm[0]/below_2cm[1]
+        percentage_below_10_dia = 100*below_dia[0]/below_dia[1]
         
         for k,v in add_objects.items():
             avg_add_obj = v[1] / v[0]
             print(f"Obj: {k}, Avg ADD: {avg_add_obj}, num obj: {v[0]}")
         print(f"Total average ADD: {avg_add_total}")
+
+        print("-"*25)
+        
+        for k,v in dia_10_objects.items():
+            perc_below_dia = v[1] / v[0]
+            print(f"Obj: {k}, Percentage below 10% of diameter: {perc_below_dia}, num obj: {v[0]}")
+        print(f"Total percentage below 10% of diameter: {percentage_below_10_dia}")
         print(f"Percentage below 2cm : {percentage_below_2cm}")
 
         return {
                 f"{type} total_loss" : avg_val_loss,
                 f"{type} total_ADD" : avg_add_total,
-                f"{type} below_2cm" : percentage_below_2cm
+                f"{type} below_2cm" : percentage_below_2cm,
+                f"{type} below_10%_diameter" : percentage_below_10_dia
             }, avg_add_total
 

@@ -188,6 +188,7 @@ class PoseEstDataset(Dataset):
         x_size = info['size_x']
         y_size = info['size_y']
         z_size = info['size_z']
+        diameter = info['diameter']
 
         half_x = x_size / 2
         half_y = y_size / 2
@@ -204,13 +205,13 @@ class PoseEstDataset(Dataset):
             [-half_x, half_y, half_z]
         ], dtype=np.float32)
 
-        return points_3d
+        return points_3d, diameter
 
 
     def get_3d_bbox_projection(self, obj_id, rotation, translation, camera_matrix):
         """Projects the 3D bounding box points into the 2D image"""
         # Call the helper method within the dataset itself
-        points_3d = self.get_3d_bbox_points(obj_id)
+        points_3d, _ = self.get_3d_bbox_points(obj_id)
         points_2d, _ = cv2.projectPoints(points_3d, rotation, translation,
                                         camera_matrix, None)
         return points_2d.squeeze()
@@ -310,7 +311,7 @@ class PoseEstDataset(Dataset):
         depth_data = self.load_depth(depth_path, bbox, 0.2)
         depth_data = depth_data.unsqueeze(0)
 
-        points_3d = self.get_3d_bbox_points(obj_id)
+        points_3d, diameter = self.get_3d_bbox_points(obj_id)
 
         return {
             "rgb": cropped_tensor,
@@ -322,4 +323,5 @@ class PoseEstDataset(Dataset):
             "rotation": torch.tensor(rotation),
             "translation": torch.tensor(translation),
             "camera_matrix": torch.tensor(camera_matrix),
+            "diameter": torch.tensor(diameter),
         }
