@@ -23,7 +23,7 @@ def run_program(args):
 
     dataset_root = args.data + "/Linemod_preprocessed"
 
-    wandb_instance = WandbSetup(args, args.project)
+    wandb_instance = WandbSetup(args, "Extension")
 
     if args.ld != "" and not os.path.exists(dataset_root):
         download_data(args.ld, args.data)
