@@ -64,14 +64,6 @@ class PoseEstDataset(Dataset):
                                  std=[0.229, 0.224, 0.225])
         ])
 
-
-        # This transform is applied to the *cropped* image in __getitem__
-        self.transform = transforms.Compose([
-            
-        ])
-        # This transform is for the *original* image if needed unnormalized
-        self.to_tensor_only = transforms.ToTensor()
-
         # Cache for configurations and GT
         self.config_cache = {}
         self.models_info_cache = {}

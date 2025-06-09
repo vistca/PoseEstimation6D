@@ -32,7 +32,7 @@ class Trainer():
         for batch_id, batch in enumerate(progress_bar):
             end = time.perf_counter()
             self.optimizer.zero_grad(set_to_none=True)
-            self.model.train()
+
             timings["DL update iter"].append(end - start)
             
             start = time.perf_counter()
@@ -56,23 +56,6 @@ class Trainer():
                     loss_dict = self.model(images, targets)
             else:
                 loss_dict = self.model(images, targets)
-            
-            # self.model.eval()
-            # outputs = self.model(images)
-            # preds = []
-            # gts = []
-            # for pred, tgt in zip(outputs, targets):
-            #     preds.append({
-            #         "boxes": pred["boxes"].cpu(),
-            #         "scores": pred["scores"].cpu(),
-            #         "labels": pred["labels"].cpu()
-            #     })
-            #     gts.append({
-            #         "boxes": tgt["boxes"].cpu(),
-            #         "labels": tgt["labels"].cpu()
-            #     })
-
-            # metric.update(preds, gts)
               
 
             loss_classifier += loss_dict["loss_classifier"].item()
