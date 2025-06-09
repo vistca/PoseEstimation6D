@@ -56,10 +56,7 @@ class FasterDataset(Dataset):
         # Define image transformations
         self.train_transform = transforms.Compose([
             transforms.ToTensor(),
-
-            transforms.ColorJitter(),
-            transforms.GaussianBlur(3),
-
+            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
             transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])
         ])

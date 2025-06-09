@@ -250,13 +250,14 @@ class PoseEstDataset(Dataset):
         depth = self.rgb_crop_img(depth, bbox, padding)
         
         # If we want to visualize the depth crop
-        #plt.imshow(depth)
-        #plt.axis("off")
-        #plt.show()
+        plt.imshow(depth)
+        plt.axis("off")
+        plt.show()
 
         depth = depth.resize(self.dimensions)
         depth = np.array(depth).astype(np.float32)
         depth = torch.from_numpy(depth)
+        print(depth)
         return depth
 
     

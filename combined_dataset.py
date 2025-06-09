@@ -173,6 +173,7 @@ class CombinedDataset(Dataset):
         #plt.imshow(img)
         #plt.axis("off")
         #plt.show()
+
         if self.split == "train":
             return self.train_transform(img)
         
@@ -184,13 +185,14 @@ class CombinedDataset(Dataset):
         #depth = self.rgb_crop_img(depth, bbox, padding)
         
         # If we want to visualize the depth crop
-        #plt.imshow(depth)
-        #plt.axis("off")
-        #plt.show()
+        # plt.imshow(depth)
+        # plt.axis("off")
+        # plt.show()
 
         #depth = depth.resize(self.dimensions)
         depth = np.array(depth).astype(np.float32)
         depth = torch.from_numpy(depth)
+        #print(depth)
         return depth
 
     def rgb_crop_img(self, rgb_img, b, m): # b is the bounding box for the image and m is the wanted margin
@@ -247,6 +249,9 @@ class CombinedDataset(Dataset):
         og_folder_id, sample_id = self.samples[idx]
         folder_id = str(og_folder_id).zfill(2) 
 
+        print(sample_id)
+        print(folder_id)
+
         # Load the correct camera intrinsics and object info for this folder
         camera_intrinsics = self.cam_data[folder_id]
         camera_matrix = np.array(camera_intrinsics['0']['cam_K']).reshape(3, 3)
@@ -280,6 +285,8 @@ class CombinedDataset(Dataset):
             "depth": depth.clone().detach(),
             #"points_2d": torch.tensor(points_norm),
             #"points_3d": torch.tensor(points_3d),
+            "img_path" : img_path,
+            "depth_path" : depth_path,
             "obj_id": torch.tensor(obj_id),
             "bbox": torch.tensor(bbox),
             "rotation": torch.tensor(rotation),
