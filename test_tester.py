@@ -131,7 +131,6 @@ if __name__ == "__main__":
     depth_path = "./datasets/Linemod_preprocessed/data/05/depth/0313.png"
     
     
-    
     bbox = [257.4022,  97.1515, 338.0164, 242.8628]
     #bbox = [258.,  99., 338., 244.]
     dims = (224, 224)
@@ -181,6 +180,7 @@ if __name__ == "__main__":
     # plt.axis("off")
     # plt.show()
     img = val_test_transform(img).unsqueeze(0)
+    #plt.show(img)
 
     depth = Image.open(depth_path)
     depth = rgb_crop_img(depth, bbox, 0.1)

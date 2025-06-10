@@ -14,6 +14,7 @@ from torch.utils.data import DataLoader
 from extension.models.combined_model import CombinedModel
 from bbox.models.fasterRCNN import FasterRCNN
 from torchvision.models.detection import fasterrcnn_resnet50_fpn_v2
+from PIL import Image, ImageDraw, ImageFont
 
 
 def load_model_info(dataset_root):
@@ -23,7 +24,7 @@ def load_model_info(dataset_root):
 
         return models_info
 
-def transform_data(image, bounding_box, padding, dims, is_img=True):
+def transform_data(image, bounding_box, padding, dims, is_img=False):
     if is_img:
         mean = torch.tensor([0.485, 0.456, 0.406])[:,None,None]
         std  = torch.tensor([0.229, 0.224, 0.225])[:,None,None]
@@ -34,14 +35,14 @@ def transform_data(image, bounding_box, padding, dims, is_img=True):
     img.show()
     img = rgb_crop_img(img, bounding_box, padding)
     img = img.resize(dims)
-    #img.show()
+    img.show()
     img = np.array(img).astype(np.float32)
-    return torch.from_numpy(img)
+    return torch.from_numpy(img).permute(2, 0, 1)
 
 
 class Tester():
 
-    def __init__(self, boxModel, poseModel, dataset_root, padding=0.1):
+    def __init__(self, boxModel, poseModel, dataset_root, padding=0.2):
         
         self.boxModel = boxModel
         self.poseModel = poseModel
@@ -50,6 +51,11 @@ class Tester():
         
         self.model_info = load_model_info(dataset_root)
         self.ply_objs = get_ply_files()
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])
+        ])
 
     def validate(self, val_loader, device, type_ds="Test"):
         # Validation phase
@@ -65,6 +71,7 @@ class Tester():
             for batch_id, batch in enumerate(progress_bar):
                 inputs = {}
                 inputs["rgb"] = batch["rgb"].to(device)
+                #print(inputs["rgb"])
                 
                 # Calculates the bbox and ids for each sample
                 outputs = self.boxModel(inputs["rgb"])
@@ -83,14 +90,16 @@ class Tester():
                 bboxes = torch.from_numpy(bboxes).to(device)
                 ids = torch.from_numpy(ids).to(device)
                 
-                print(batch['img_path'][0])
-                print(batch['depth_path'][0])
+                #print(batch['img_path'][0])c
+                #print(batch['depth_path'][0])
 
 
                 
-                print(f"Pred bbox: {bboxes[0]}")
+                #print(f"Pred bbox: {bboxes[0]}")
                 #print(f"True bbox: {batch["bbox"][0]}")
                 #print(ids)
+
+                #bboxes = batch["bbox"]
 
                 
 
@@ -99,16 +108,29 @@ class Tester():
                 nr_datapoints = bboxes.shape[0]
 
                 images = np.empty((batch_size, 3, self.dims[0], self.dims[1]))
-                depths = np.empty((batch_size, 1, self.dims[0], self.dims[0]))
+                depths = np.empty((batch_size, 1, self.dims[0], self.dims[1]))
                 for i in range(nr_datapoints):
-                    img = inputs["rgb"][i]
-                    #print(img.shape)
-                    depth = batch["depth"][i]
-                    bbox = bboxes[i]
+                    bounding_box = bboxes[i]
+                    img_path = batch["img_path"][i]
+                    img = Image.open(img_path) 
+                    #img = batch["original_img"][i]
+                    img = rgb_crop_img(img, bounding_box, self.padding)
+                    img = img.resize(self.dims)
+                    img.show()
+                    img = self.transform(img).to(device)
+
+                    depth_path = batch["depth_path"][i]
+                    depth = Image.open(depth_path)
+                    #depth = batch["original_depth"][i]
+                    depth = rgb_crop_img(depth, bounding_box, self.padding)
+                    depth = depth.resize(self.dims)
+                    depth = np.array(depth).astype(np.float32)
+                    depth = torch.from_numpy(depth).unsqueeze(0).to(device)
                     # We have to permutate since PIL changes the shape from (C, H, W) -> (H, W, C)
-                    img = transform_data(img, bbox, self.padding, self.dims).permute(2, 0, 1)
-                    depth = transform_data(depth, bbox, self.padding, self.dims, is_img=False).unsqueeze(0)
-                    print(depth)
+                    #img = transform_data(img, bbox, self.padding, self.dims)
+                    #print(img)
+                    #depth = transform_data(depth, bbox, self.padding, self.dims, is_img=False).unsqueeze(0)
+                    #print(depth)
                     images[i] = img
                     depths[i] = depth
 
@@ -137,11 +159,25 @@ class Tester():
                 gts_R = batch["rotation"]
                 for i in range(nr_datapoints):
 
+                    #tensor([-35.6224, -96.1011, 756.9523])
+                    # tensor([-35.7664, -94.3124, 752.7466])
+                    # tensor([[ 0.9059, -0.4234, -0.0125],
+                    #     [-0.2947, -0.6086, -0.7367],
+                    #     [ 0.3043,  0.6711, -0.6761]])
+                    # tensor([[ 0.8689, -0.4950,  0.0084],
+                    #     [-0.3455, -0.6185, -0.7058],
+                    #     [ 0.3545,  0.6103, -0.7084]])
                     pred_t = reconstruction_3d[i, :3]
                     pred_R = reconstruction_3d[i, 3:].reshape((3,3))
 
+
                     gt_t = gts_t[i]
                     gt_R = gts_R[i].reshape((3,3))
+
+                    print(pred_t)
+                    print(gt_t)
+                    print(pred_R)
+                    print(gt_R)
 
                     model_points = self.ply_objs[int(ids[i].item())]
 
@@ -179,6 +215,7 @@ if __name__ == "__main__":
 
     comb_model_name = "bb8_1"
     extension_model_load_name = "extension_test_11_31"
+    #extension_model_load_name = "extension_test_15_92"
 
 
     split_percentage = {

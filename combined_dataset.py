@@ -175,25 +175,25 @@ class CombinedDataset(Dataset):
         #plt.show()
 
         if self.split == "train":
-            return self.train_transform(img)
+            return self.train_transform(img), img
         
-        return self.val_test_transform(img)
+        return self.val_test_transform(img), img
     
     def load_depth(self, depth_path):
         """Load a depth image and convert to tensor."""
-        depth = Image.open(depth_path)
+        img_depth = Image.open(depth_path)
         #depth = self.rgb_crop_img(depth, bbox, padding)
         
         # If we want to visualize the depth crop
-        # plt.imshow(depth)
-        # plt.axis("off")
-        # plt.show()
+        #plt.imshow(depth)
+        #plt.axis("off")
+        #plt.show()
 
         #depth = depth.resize(self.dimensions)
-        depth = np.array(depth).astype(np.float32)
+        depth = np.array(img_depth).astype(np.float32)
         depth = torch.from_numpy(depth)
         #print(depth)
-        return depth
+        return depth, img_depth
 
     def rgb_crop_img(self, rgb_img, b, m): # b is the bounding box for the image and m is the wanted margin
         # b = [x_left, y_top, x_width, y_height]
@@ -260,8 +260,8 @@ class CombinedDataset(Dataset):
         img_path = os.path.join(self.dataset_root, 'data', folder_id, f"rgb/{sample_id:04d}.png")
         depth_path = os.path.join(self.dataset_root, 'data', folder_id, f"depth/{sample_id:04d}.png")
 
-        img = self.load_image(img_path)
-        depth = self.load_depth(depth_path)
+        img, original_img = self.load_image(img_path)
+        depth, original_depth = self.load_depth(depth_path)
         point_cloud = self.load_point_cloud(depth.numpy(), camera_intrinsics)
         point_cloud = torch.tensor(np.asarray(point_cloud.points), dtype=torch.float32)
         translation, rotation, bbox, obj_id = self.load_6d_pose(folder_id, sample_id)
@@ -285,6 +285,8 @@ class CombinedDataset(Dataset):
             "depth": depth.clone().detach(),
             #"points_2d": torch.tensor(points_norm),
             #"points_3d": torch.tensor(points_3d),
+            #"original_img" : original_img,
+            #"original_depth" : original_depth,
             "img_path" : img_path,
             "depth_path" : depth_path,
             "obj_id": torch.tensor(obj_id),
