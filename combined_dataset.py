@@ -277,8 +277,9 @@ class CombinedDataset(Dataset):
         #img = self.load_image(img_path)
         #depth_data = self.load_depth(depth_path, bbox, 0.2)
         depth = depth.unsqueeze(0)
-
-        #points_3d = self.get_3d_bbox_points(obj_id)
+        info = self.objects_info[int(obj_id)]
+        diameter = info['diameter']
+        #points_3d, diameter = self.get_3d_bbox_points(obj_id)
 
         return {
             "rgb": img,
@@ -293,6 +294,7 @@ class CombinedDataset(Dataset):
             "bbox": torch.tensor(bbox),
             "rotation": torch.tensor(rotation),
             "translation": torch.tensor(translation),
+            "diameter": torch.tensor(diameter),
             #"point_cloud": point_cloud,
             #"camera_intrinsics": camera_intrinsics['0']['cam_K'],
             #"objects_info": self.objects_info[og_folder_id],

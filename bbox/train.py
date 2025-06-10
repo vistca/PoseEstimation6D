@@ -76,12 +76,6 @@ class Trainer():
             scaled_factor = scaler.get_scale()
             scaler.step(self.optimizer)
             scaler.update()
-            if not scaled_factor <= scaler.get_scale() and self.scheduler:
-                if self.scheduler.__class__.__name__ == "ReduceLROnPlateau":
-                    self.scheduler.step(loss)
-                else:
-                    self.scheduler.step()
-                #self.wandb_instance.log_metric({"Learning rate after batch" : self.scheduler._last_lr})
 
             end = time.perf_counter()
             timings["backprop"].append(end - start)
@@ -99,6 +93,9 @@ class Trainer():
         #val_metrics = metric.compute()
 
         avg_loss = total_loss / len(train_loader)
+        self.scheduler.step()
+        print("LR is: ", self.scheduler._last_lr[0])
+
 
 
         # self.wandb_instance.log_metric({"Training total_loss" : avg_loss,

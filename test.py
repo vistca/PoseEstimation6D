@@ -65,6 +65,9 @@ class Tester():
         add_objects = {}
         more_than_one_count = 0
         missmatch_obj = 0
+        dia_10_objects = {}
+        below_2cm = [0,0]
+        below_dia = [0,0]
 
         with torch.no_grad(): # Disable gradient calculation for validation
             desc = "Test"
@@ -74,6 +77,7 @@ class Tester():
                 inputs = {}
                 inputs["rgb"] = batch["rgb"].to(device)
                 inputs["obj_id"] = batch["obj_id"].to(device)
+                diameters = batch["diameter"]
                 #print(inputs["rgb"])
                 # Calculates the bbox and ids for each sample
                 outputs = self.boxModel(inputs["rgb"])
@@ -209,12 +213,29 @@ class Tester():
                     else:
                         new_count = add_obj[0] + 1
                         new_val = add_obj[1] + add
-                    add_objects[str(int(ids[i].item()))] = [new_count, new_val]
-                    add_total = [add_total[0] + 1, add_total[1] + add]
+                    
+
+                    below_2cm[1] = below_2cm[1] + 1
+                    if add < 20:
+                        below_2cm[0] = below_2cm[0] + 1
+
+                    dia_10_object = dia_10_objects.get(str(int(ids[i].item()+1)))
+                    diameter = diameters[i]
+                    new_low = 1 if add < 0.1*diameter else 0
+                    if not dia_10_object:
+                        new_count = 1
+                        new_val = new_low
+                    else:
+                        new_count = dia_10_object[0] + 1
+                        new_val = dia_10_object[1] + new_low
+                    dia_10_objects[str(int(ids[i].item()+1))] = [new_count, new_val]
+                    below_dia = [below_dia[0] + new_low, below_dia[1] + 1]
 
                 progress_bar.set_postfix(total="Placeholder")
 
         avg_add_total = add_total[1] / add_total[0]
+        percentage_below_2cm = 100*below_2cm[0]/below_2cm[1]
+        percentage_below_10_dia = 100*below_dia[0]/below_dia[1]
 
         print("Multi-preds made by the model: ", more_than_one_count)
         print("Missmatch obj-preds made by the model: ", missmatch_obj)
@@ -223,6 +244,12 @@ class Tester():
             avg_add_obj = v[1] / v[0]
             print(f"Obj: {k}, Avg ADD: {avg_add_obj}, num obj: {v[0]}")
         print(f"Total average ADD: {avg_add_total}")
+
+        for k,v in dia_10_objects.items():
+            perc_below_dia = v[1] / v[0]
+            print(f"Obj: {k}, Percentage below 10% of diameter: {perc_below_dia}, num obj: {v[0]}")
+        print(f"Total percentage below 10% of diameter: {percentage_below_10_dia}")
+        print(f"Percentage below 2cm : {percentage_below_2cm}")
     
 
 if __name__ == "__main__":
