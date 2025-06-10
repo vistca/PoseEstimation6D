@@ -40,6 +40,9 @@ class WandbSetup():
         if self.logging:
             self.run.log(log_dict)
 
+    def get_run_name(self):
+        return self.run.name
+
     def log_hist(self, key, value):
         if self.logging:
             self.run.log({key : wandb.Histogram(value)})

@@ -12,6 +12,7 @@ import numpy as np
 from combined_dataset import CombinedDataset
 from torch.utils.data import DataLoader
 from extension.models.combined_model import CombinedModel
+from pose2.models.model_creator import create_model
 from bbox.models.fasterRCNN import FasterRCNN
 from torchvision.models.detection import fasterrcnn_resnet50_fpn_v2
 from PIL import Image, ImageDraw, ImageFont
@@ -42,12 +43,13 @@ def transform_data(image, bounding_box, padding, dims, is_img=False):
 
 class Tester():
 
-    def __init__(self, boxModel, poseModel, dataset_root, padding=0.2):
+    def __init__(self, boxModel, poseModel, dataset_root, run_extension,padding=0.2):
         
         self.boxModel = boxModel
         self.poseModel = poseModel
         self.dims = self.poseModel.get_dimensions()
         self.padding = padding
+        self.run_extension = run_extension
         
         self.model_info = load_model_info(dataset_root)
         self.ply_objs = get_ply_files()
@@ -159,7 +161,11 @@ class Tester():
 
                 images = torch.from_numpy(images).float().to(device)
                 depths = torch.from_numpy(depths).float().to(device)
-                inputs = {"rgb" : images, "depth" : depths}
+                if run_extension:
+                    inputs = {"rgb" : images, "depth" : depths}
+                else:
+
+                    inputs = images
                 
 
                 # Do a forward pass to the second model
@@ -182,25 +188,12 @@ class Tester():
                 gts_R = batch["rotation"]
                 for i in range(nr_datapoints):
 
-                    #tensor([-35.6224, -96.1011, 756.9523])
-                    # tensor([-35.7664, -94.3124, 752.7466])
-                    # tensor([[ 0.9059, -0.4234, -0.0125],
-                    #     [-0.2947, -0.6086, -0.7367],
-                    #     [ 0.3043,  0.6711, -0.6761]])
-                    # tensor([[ 0.8689, -0.4950,  0.0084],
-                    #     [-0.3455, -0.6185, -0.7058],
-                    #     [ 0.3545,  0.6103, -0.7084]])
                     pred_t = reconstruction_3d[i, :3]
                     pred_R = reconstruction_3d[i, 3:].reshape((3,3))
 
 
                     gt_t = gts_t[i]
                     gt_R = gts_R[i].reshape((3,3))
-
-                    #print(pred_t)
-                    #print(gt_t)
-                    #print(pred_R)
-                    #print(gt_R)
 
                     model_points = self.ply_objs[int(ids[i].item())]
 
@@ -254,6 +247,7 @@ class Tester():
 
 if __name__ == "__main__":
     batch_size = 16
+    run_extension = True
 
     box_model_name = "transform"
     #box_model_load_name = "Transform_3tr_ep3"
@@ -262,7 +256,7 @@ if __name__ == "__main__":
 
 
     comb_model_name = "bb8_1"
-    extension_model_load_name = "extension_test_11_31"
+    pose_model_load_name = "extension_test_11_31"
     #extension_model_load_name = "extension_test_15_92"
 
 
@@ -285,15 +279,23 @@ if __name__ == "__main__":
     bbox_model.to(device)
     print("Bbox model loaded")
 
+    if run_extension:
+        model = CombinedModel(device, comb_model_name)
+        load_path = f"extension/checkpoints/{pose_model_load_name}.pt"
+        model.load_state_dict(torch.load(load_path, weights_only=True, map_location=device.type))
+        print("Extension models loaded")
+        model.to(device)
 
-    extension_model = CombinedModel(device, comb_model_name)
-    load_path = f"extension/checkpoints/{extension_model_load_name}.pt"
-    extension_model.load_state_dict(torch.load(load_path, weights_only=True, map_location=device.type))
-    print("Extension models loaded")
-    extension_model.to(device)
+    else:
+        model_name = "bb8_1"
+        load_path = f"extension/checkpoints/{pose_model_load_name}.pt"
+        model = create_model(model_name) 
+        model.load_state_dict(torch.load(load_path, weights_only=True, map_location=device.type))
+        print("RGB data pose model loaded")
+        model.to(device)
 
-    test_dataset = CombinedDataset(dataset_root, split_percentage, extension_model.get_dimensions(), split="test")
+    test_dataset = CombinedDataset(dataset_root, split_percentage, model.get_dimensions(), split="test")
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=2)
 
-    test_cls = Tester(bbox_model, extension_model, dataset_root)
+    test_cls = Tester(bbox_model, model, dataset_root, run_extension)
     test_cls.validate(test_loader, device)

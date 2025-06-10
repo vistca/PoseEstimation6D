@@ -9,11 +9,6 @@ from .data.faster_dataset import FasterDataset
 from .test import Tester
 from .train import Trainer
 
-# import os
-# import sys
-# parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-# sys.path.insert(0, parent_dir)
-
 from utils.wandb_setup import WandbSetup
 from utils.optimizer_loader import OptimLoader
 from utils.scheduler_loader import ScheduleLoader
@@ -26,6 +21,10 @@ def run_program(args):
     dataset_root = args.data + "/Linemod_preprocessed"
 
     wandb_instance = WandbSetup(args, args.project)
+
+    save_name = args.sm
+    if args.sweep:
+         save_name = wandb_instance.get_run_name()
 
     if args.ld != "" and not os.path.exists(dataset_root):
         download_data(args.ld, args.data)
@@ -88,7 +87,7 @@ def run_program(args):
 
     if args.test == False:
         tth.train_test_val_model(train_loader, val_loader, test_loader,
-                                device, args.sm, args.test)
+                                device, save_name, args.test)
     else:
          test_output = tester.validate(test_loader, device, 'Test')
          print("\nTest statistics", test_output)

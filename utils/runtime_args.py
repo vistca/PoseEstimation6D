@@ -62,5 +62,8 @@ def add_runtime_args():
     parser.add_argument('--mod', type=str,
                         help="The identifyer of a pose estimation model", default="res18")
     
+    parser.add_argument('--sweep', type=bool,
+                        help="The identifyer of a pose estimation model", default=False)
+    
     return parser.parse_args()
     
