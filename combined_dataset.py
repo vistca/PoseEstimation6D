@@ -249,8 +249,8 @@ class CombinedDataset(Dataset):
         og_folder_id, sample_id = self.samples[idx]
         folder_id = str(og_folder_id).zfill(2) 
 
-        print(sample_id)
-        print(folder_id)
+        #(sample_id)
+        #print(folder_id)
 
         # Load the correct camera intrinsics and object info for this folder
         camera_intrinsics = self.cam_data[folder_id]

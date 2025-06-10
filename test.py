@@ -63,6 +63,8 @@ class Tester():
         self.poseModel.eval()
         add_total = [0,0]
         add_objects = {}
+        more_than_one_count = 0
+        missmatch_obj = 0
 
         with torch.no_grad(): # Disable gradient calculation for validation
             desc = "Test"
@@ -71,22 +73,39 @@ class Tester():
             for batch_id, batch in enumerate(progress_bar):
                 inputs = {}
                 inputs["rgb"] = batch["rgb"].to(device)
+                inputs["obj_id"] = batch["obj_id"].to(device)
                 #print(inputs["rgb"])
-                
                 # Calculates the bbox and ids for each sample
                 outputs = self.boxModel(inputs["rgb"])
                 # Output: [{bbox1, label1}, {bbox2, label2}]
+                nr_datapoints = len(outputs)
                 #print(outputs)
                 
                 # TODO: Check that this actually produces the correct thing
                 # what we want to do is to convert the shape to the same as we would 
                 # otherwise expect the bbox and id to be
                 # TODO: Might not need to send to device
-                bboxes = np.empty((batch_size, 4))
-                ids = np.empty((batch_size))
+                bboxes = np.empty((nr_datapoints, 4))
+                ids = np.empty((nr_datapoints))
                 for i in range(len(outputs)):
-                    bboxes[i] = outputs[i]["boxes"]
-                    ids[i] = outputs[i]["labels"]
+                    #print(outputs[i]["boxes"].cpu().shape)
+                    bbox = outputs[i]["boxes"]
+                    obj_id = outputs[i]["labels"]
+                    if len(obj_id) > 1:
+                        more_than_one_count += 1
+                        index = torch.argmax(obj_id)
+                        obj_id = outputs[i]['labels'][index]
+                        bbox = outputs[i]['boxes'][index]
+
+                    tmp = inputs["obj_id"][i].item()
+                    print(tmp)
+                    print(obj_id.item())
+                    if obj_id.item != int(tmp):
+                      missmatch_obj += 1
+
+                    #print(outputs[i])
+                    bboxes[i] = bbox.cpu()
+                    ids[i] = obj_id.cpu()
                 bboxes = torch.from_numpy(bboxes).to(device)
                 ids = torch.from_numpy(ids).to(device)
                 
@@ -105,10 +124,10 @@ class Tester():
 
                 # Pass this to the second model responsible for pose est
                 
-                nr_datapoints = bboxes.shape[0]
+                #nr_datapoints = bboxes.shape[0]
 
-                images = np.empty((batch_size, 3, self.dims[0], self.dims[1]))
-                depths = np.empty((batch_size, 1, self.dims[0], self.dims[1]))
+                images = np.empty((nr_datapoints, 3, self.dims[0], self.dims[1]))
+                depths = np.empty((nr_datapoints, 1, self.dims[0], self.dims[1]))
                 for i in range(nr_datapoints):
                     bounding_box = bboxes[i]
                     img_path = batch["img_path"][i]
@@ -116,8 +135,8 @@ class Tester():
                     #img = batch["original_img"][i]
                     img = rgb_crop_img(img, bounding_box, self.padding)
                     img = img.resize(self.dims)
-                    img.show()
-                    img = self.transform(img).to(device)
+                    #img.show()
+                    img = self.transform(img)
 
                     depth_path = batch["depth_path"][i]
                     depth = Image.open(depth_path)
@@ -125,7 +144,7 @@ class Tester():
                     depth = rgb_crop_img(depth, bounding_box, self.padding)
                     depth = depth.resize(self.dims)
                     depth = np.array(depth).astype(np.float32)
-                    depth = torch.from_numpy(depth).unsqueeze(0).to(device)
+                    depth = torch.from_numpy(depth).unsqueeze(0)
                     # We have to permutate since PIL changes the shape from (C, H, W) -> (H, W, C)
                     #img = transform_data(img, bbox, self.padding, self.dims)
                     #print(img)
@@ -174,10 +193,10 @@ class Tester():
                     gt_t = gts_t[i]
                     gt_R = gts_R[i].reshape((3,3))
 
-                    print(pred_t)
-                    print(gt_t)
-                    print(pred_R)
-                    print(gt_R)
+                    #print(pred_t)
+                    #print(gt_t)
+                    #print(pred_R)
+                    #print(gt_R)
 
                     model_points = self.ply_objs[int(ids[i].item())]
 
@@ -194,9 +213,11 @@ class Tester():
                     add_total = [add_total[0] + 1, add_total[1] + add]
 
                 progress_bar.set_postfix(total="Placeholder")
-                break
 
         avg_add_total = add_total[1] / add_total[0]
+
+        print("Multi-preds made by the model: ", more_than_one_count)
+        print("Missmatch obj-preds made by the model: ", missmatch_obj)
         
         for k,v in add_objects.items():
             avg_add_obj = v[1] / v[0]
@@ -205,11 +226,11 @@ class Tester():
     
 
 if __name__ == "__main__":
-    batch_size = 1
+    batch_size = 16
 
     box_model_name = "transform"
     #box_model_load_name = "Transform_3tr_ep3"
-    box_model_load_name = "Transform_aug"
+    box_model_load_name = "Transform_aug_v2"
     box_trainable_backbone = 3
 
 
@@ -234,6 +255,7 @@ if __name__ == "__main__":
     #fasterrcnn_resnet50_fpn_v2(weights='DEFAULT', trainable_backbone_layers=5)
     load_path = f"bbox/checkpoints/{box_model_load_name}.pt"
     bbox_model.load_state_dict(torch.load(load_path, weights_only=True, map_location=device.type))
+    bbox_model.to(device)
     print("Bbox model loaded")
 
 
@@ -241,10 +263,10 @@ if __name__ == "__main__":
     load_path = f"extension/checkpoints/{extension_model_load_name}.pt"
     extension_model.load_state_dict(torch.load(load_path, weights_only=True, map_location=device.type))
     print("Extension models loaded")
-
+    extension_model.to(device)
 
     test_dataset = CombinedDataset(dataset_root, split_percentage, extension_model.get_dimensions(), split="test")
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=2)
 
     test_cls = Tester(bbox_model, extension_model, dataset_root)
     test_cls.validate(test_loader, device)
