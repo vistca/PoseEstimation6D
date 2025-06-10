@@ -17,6 +17,10 @@ class Tester:
         loss_box_reg = 0
         loss_objectness = 0
         loss_rpn_box_reg = 0
+
+        correct_labels = 0
+        total_labels = 0
+
         metric = MeanAveragePrecision()
 
         print(f"Starting {type}...")
@@ -69,6 +73,17 @@ class Tester:
                         "labels": tgt["labels"].cpu()
                     })
 
+                    # Calculate label accuracy
+                    pred_labels = pred["labels"].cpu()
+                    gt_labels = tgt["labels"].cpu()
+                    if len(pred_labels) > 0:  # If the model made a prediction
+                        pred_label = pred_labels[0].item()
+                        gt_label = gt_labels[0].item()
+                        if pred_label == gt_label:
+                            correct_labels += 1
+                    total_labels += 1
+
+
                 metric.update(preds, gts)
                 progress_bar.set_postfix(total=val_loss/(batch_id + 1), 
                                          class_loss=loss_classifier/(batch_id + 1), 
@@ -78,20 +93,8 @@ class Tester:
         avg_loss = val_loss / len(dataloader)
         val_metrics = metric.compute()
 
-        # Log to wandb
-        # self.wandb_instance.log_metric({
-        #     f"{type} total_loss": avg_loss,
-        #     f"{type} class_loss": loss_classifier / len(dataloader),
-        #     f"{type} box_loss": loss_box_reg / len(dataloader),
-        #     f"{type} background_loss": loss_objectness / len(dataloader),
-        #     f"{type} rpn_box_loss": loss_rpn_box_reg / len(dataloader),
-        #     f"{type} mAP@IoU=0.5:0.95": val_metrics["map"].item(),
-        #     f"{type} mAP@IoU=0.5": val_metrics["map_50"].item(),
-        #     f"{type} mAP@IoU=0.75": val_metrics["map_75"].item(),
-        #     f"{type} AR@max=1": val_metrics["mar_1"].item(),
-        #     f"{type} AR@max=10": val_metrics["mar_10"].item(),
-        #     f"{type} AR@max=100": val_metrics["mar_100"].item(),
-        # })
+        label_accuracy = correct_labels / total_labels if total_labels > 0 else 0
+
 
         return {
             f"Average {type} loss" : round(avg_loss, 4), 
@@ -99,4 +102,6 @@ class Tester:
             f"{type} class_loss": loss_classifier / len(dataloader),
             f"{type} box_loss": loss_box_reg / len(dataloader),
             f"{type} background_loss": loss_objectness / len(dataloader),
+            f"{type} label_accuracy (%)": round(label_accuracy * 100, 2), 
+
         }, round(avg_loss, 4)

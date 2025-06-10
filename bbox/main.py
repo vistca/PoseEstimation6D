@@ -86,9 +86,12 @@ def run_program(args):
     test_loader = MultiEpochsDataLoader(test_dataset, batch_size=args.bs, 
                                         shuffle=True, num_workers=args.w)
 
-
-    tth.train_test_val_model(train_loader, val_loader, test_loader,
-                             device, args.sm, args.test)
+    if args.test == False:
+        tth.train_test_val_model(train_loader, val_loader, test_loader,
+                                device, args.sm, args.test)
+    else:
+         test_output = tester.validate(test_loader, device, 'Test')
+         print("\nTest statistics", test_output)
 
 
 if __name__ == "__main__":
