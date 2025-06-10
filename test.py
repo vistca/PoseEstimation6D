@@ -68,6 +68,7 @@ class Tester():
         more_than_one_count = 0
         missmatch_obj = 0
         dia_10_objects = {}
+        cm_2_objects = {}
         below_2cm = [0,0]
         below_dia = [0,0]
 
@@ -104,8 +105,8 @@ class Tester():
                         bbox = outputs[i]['boxes'][index]
 
                     tmp = inputs["obj_id"][i].item()
-                    print(tmp)
-                    print(obj_id.item())
+                    # print(tmp)
+                    # print(obj_id.item())
                     if obj_id.item != int(tmp):
                       missmatch_obj += 1
 
@@ -199,6 +200,8 @@ class Tester():
 
                     add = compute_ADD(model_points, gt_R, gt_t, pred_R, pred_t)
 
+                    add_total = [add_total[0] + add, add_total[1] + 1]
+
                     add_obj = add_objects.get(str(int(ids[i].item())))
                     if not add_obj:
                         new_count = 1
@@ -206,13 +209,25 @@ class Tester():
                     else:
                         new_count = add_obj[0] + 1
                         new_val = add_obj[1] + add
+                    add_objects[str(int(ids[i].item()))] = [new_count, new_val]
                     
-
+                    
                     below_2cm[1] = below_2cm[1] + 1
                     if add < 20:
                         below_2cm[0] = below_2cm[0] + 1
 
-                    dia_10_object = dia_10_objects.get(str(int(ids[i].item()+1)))
+                    cm_2_object = cm_2_objects.get(str(int(ids[i].item())))
+                    diameter = diameters[i]
+                    new_low = 1 if add < 20 else 0
+                    if not cm_2_object:
+                        new_count = 1
+                        new_val = new_low
+                    else:
+                        new_count = cm_2_object[0] + 1
+                        new_val = cm_2_object[1] + new_low
+                    cm_2_objects[str(int(ids[i].item()))] = [new_count, new_val]
+
+                    dia_10_object = dia_10_objects.get(str(int(ids[i].item())))
                     diameter = diameters[i]
                     new_low = 1 if add < 0.1*diameter else 0
                     if not dia_10_object:
@@ -221,28 +236,40 @@ class Tester():
                     else:
                         new_count = dia_10_object[0] + 1
                         new_val = dia_10_object[1] + new_low
-                    dia_10_objects[str(int(ids[i].item()+1))] = [new_count, new_val]
+                    dia_10_objects[str(int(ids[i].item()))] = [new_count, new_val]
                     below_dia = [below_dia[0] + new_low, below_dia[1] + 1]
 
                 progress_bar.set_postfix(total="Placeholder")
 
-        avg_add_total = add_total[1] / add_total[0]
+                break
+
+        avg_add_total = add_total[0] / add_total[1]
         percentage_below_2cm = 100*below_2cm[0]/below_2cm[1]
         percentage_below_10_dia = 100*below_dia[0]/below_dia[1]
 
         print("Multi-preds made by the model: ", more_than_one_count)
         print("Missmatch obj-preds made by the model: ", missmatch_obj)
+
+        print("")
         
         for k,v in add_objects.items():
             avg_add_obj = v[1] / v[0]
             print(f"Obj: {k}, Avg ADD: {avg_add_obj}, num obj: {v[0]}")
         print(f"Total average ADD: {avg_add_total}")
 
+        print("")
+
         for k,v in dia_10_objects.items():
-            perc_below_dia = v[1] / v[0]
-            print(f"Obj: {k}, Percentage below 10% of diameter: {perc_below_dia}, num obj: {v[0]}")
-        print(f"Total percentage below 10% of diameter: {percentage_below_10_dia}")
-        print(f"Percentage below 2cm : {percentage_below_2cm}")
+            perc_below_dia = 100*v[1] / v[0]
+            print(f"Obj: {k}, Percentage below 10% of diameter: {perc_below_dia}%, num obj: {v[0]}")
+        print(f"Total percentage below 10% of diameter: {percentage_below_10_dia}%")
+
+        print("")
+
+        for k,v in cm_2_objects.items():
+            perc_below_2_cm = 100*v[1] / v[0]
+            print(f"Obj: {k}, Percentage below 2cm: {perc_below_2_cm}%, num obj: {v[0]}")
+        print(f"Percentage below 2cm : {percentage_below_2cm}%")
     
 
 if __name__ == "__main__":
@@ -251,7 +278,7 @@ if __name__ == "__main__":
 
     box_model_name = "transform"
     #box_model_load_name = "Transform_3tr_ep3"
-    box_model_load_name = "Transform_aug_v2"
+    box_model_load_name = "Transform_aug"
     box_trainable_backbone = 3
 
 
