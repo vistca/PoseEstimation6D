@@ -58,7 +58,7 @@ def run_program(args):
 
     tth = TTH(model,optimizer, 
               wandb_instance, args.epochs,
-              trainer, tester, "./2dBox"
+              trainer, tester, "./bbox"
               )
 
     dataset_root = args.data + "/Linemod_preprocessed"
