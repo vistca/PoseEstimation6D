@@ -10,7 +10,7 @@ method: grid
 
 metric:
   name: Best validation metric
-  goal: maximize
+  goal: minimize
 
 parameters:
 
