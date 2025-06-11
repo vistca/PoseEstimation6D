@@ -32,12 +32,8 @@ class CombinedModel2(nn.Module):
         # Head for predicting 2D points (8 corners * 2 coordinates)
         self.bbox_head = nn.Sequential(
             nn.Dropout(p=0.3),
-            nn.Linear(self.fc_input_size, 512),  # ResNet50 feature size = 2048
+            nn.Linear(self.fc_input_size, 256),  # ResNet50 feature size = 2048
             nn.ReLU(),
-            nn.Dropout(p=0.2),
-            nn.Linear(512, 256),
-            nn.ReLU(),
-            nn.Dropout(p=0.2),
             nn.Linear(256, 16) # 8 points * 2 coordinates
         ).to(device)
 
