@@ -73,7 +73,7 @@ def run_program(args):
         except:
                 raise("Could not load the model, might be due to missmatching models or something else")
 
-    schedulerloader = ScheduleLoader(optimizer, args.scheduler, args.bs, 11058, 2)
+    schedulerloader = ScheduleLoader(optimizer, args.scheduler, args.bs, 6, 10)
     scheduler = schedulerloader.get_scheduler()
 
     trainer = Trainer(model, optimizer, args, scheduler)

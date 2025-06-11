@@ -1,0 +1,39 @@
+program: pose2/main.py
+command:
+  - ${env}
+  - ${interpreter}
+  - "-m"
+  - pose2.main
+  - ${args}
+
+method: grid
+
+metric:
+  name: Best validation metric
+  goal: maximize
+
+parameters:
+
+  lr:
+    distribution: categorical
+    values: [0.001, 0.0001]
+
+  optimizer:
+    distribution: categorical
+    values: ["Adam", "AdamW"]
+
+  scheduler:
+    value: "CosineAnnealingWarmRestarts"
+
+  mod:
+    distribution: categorical
+    values: ["bb8_1", "bb8_2", "bb8_3"]
+
+  epochs:
+    value: 10
+
+  bs:
+    value: 64
+
+  sweep:
+    value: True
