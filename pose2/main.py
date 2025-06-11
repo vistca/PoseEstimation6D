@@ -29,6 +29,10 @@ def run_program(args):
     runtime_dir_path = os.path.dirname(os.path.abspath(__file__))
     wandb_instance = WandbSetup(args, "PosePhase3")
 
+    save_name = args.sm
+    if args.sweep:
+         save_name = wandb_instance.get_run_name()
+
     # Configuration
     dataset_root = "./datasets/Linemod_preprocessed/" # Ensure this path is correct relative to your Colab environment
     batch_size = args.bs
@@ -84,7 +88,7 @@ def run_program(args):
               trainer, tester, runtime_dir_path)
     
     tth.train_test_val_model(train_loader, val_loader, test_loader,
-                             device, args.sm, args.test)
+                             device, save_name, args.test)
 
     # best_val_loss = float('inf')
 
