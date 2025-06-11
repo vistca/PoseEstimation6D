@@ -5,6 +5,7 @@ import torch
 from .models.depth_nn import DepthNN
 from .models.rgb_nn import RgbNN
 from .models.combined_model import CombinedModel
+from .models.combined_model_2 import CombinedModel2
 from timm.data.loader import MultiEpochsDataLoader
 from prep_data import download_data, yaml_to_json
 #from .data.extension_dataset import ExtensionDataset
@@ -31,7 +32,7 @@ def run_program(args):
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    model = CombinedModel(device, args.mod)
+    model = CombinedModel2(device, args.mod)
 
     # TODO: should look at this loading, does it load the entire model for pose or just the resnet part?
     if args.lm != "":
@@ -50,10 +51,8 @@ def run_program(args):
     optimizer = optimloader.get_optimizer()
 
     # This is just a small hack to get the restart after 10 epochs
-    bs = 3
-    sample_size = 10
 
-    schedulerloader = ScheduleLoader(optimizer, args.scheduler, bs, sample_size)
+    schedulerloader = ScheduleLoader(optimizer, args.scheduler, 3, 10)
     scheduler = schedulerloader.get_scheduler()
 
     trainer = Trainer(model, optimizer, args, scheduler)#, wandb_instance, scheduler)

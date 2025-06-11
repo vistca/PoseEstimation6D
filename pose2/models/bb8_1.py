@@ -6,11 +6,12 @@ class BB8Model_1(nn.Module):
         super().__init__()
         # We use ResNet18 as the backbone instead of VGG for greater efficiency
         self.backbone = resnet18(pretrained=True)
+        self.in_channels = self.backbone.fc.in_features
         self.backbone.fc = nn.Identity()  # We remove the final fully connected layer
 
         # Head for predicting 2D points (8 corners * 2 coordinates)
         self.bbox_head = nn.Sequential(
-            nn.Linear(512, 256),
+            nn.Linear(self.in_channels, 256),
             nn.ReLU(),
             nn.Linear(256, 16)# 8 points * 2 coordinates
         )
