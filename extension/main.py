@@ -26,13 +26,20 @@ def run_program(args):
 
     wandb_instance = WandbSetup(args, "Extension")
 
+    save_name = args.sm
+    if args.sweep:
+         save_name = wandb_instance.get_run_name()
+
     if args.ld != "" and not os.path.exists(dataset_root):
         download_data(args.ld, args.data)
         yaml_to_json(args.data + "Linemod_preprocessed/data/")
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-    model = CombinedModel2(device, args.mod)
+    
+    if args.fm == "cm2":
+        model = CombinedModel2(device, args.mod)
+    else:
+         model = CombinedModel(device, args.mod)
 
     # TODO: should look at this loading, does it load the entire model for pose or just the resnet part?
     if args.lm != "":
@@ -50,9 +57,7 @@ def run_program(args):
     optimloader = OptimLoader(args.optimizer, model_params, args.lr)
     optimizer = optimloader.get_optimizer()
 
-    # This is just a small hack to get the restart after 10 epochs
-
-    schedulerloader = ScheduleLoader(optimizer, args.scheduler, 3, 10)
+    schedulerloader = ScheduleLoader(optimizer, args.scheduler, 6, 10)
     scheduler = schedulerloader.get_scheduler()
 
     trainer = Trainer(model, optimizer, args, scheduler)#, wandb_instance, scheduler)
@@ -89,7 +94,7 @@ def run_program(args):
 
 
     tth.train_test_val_model(train_loader, val_loader, test_loader,
-                             device, args.sm, args.test)
+                             device, save_name, args.test)
 
 
 if __name__ == "__main__":

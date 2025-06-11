@@ -74,7 +74,7 @@ class CombinedModel2(nn.Module):
     """
     def get_parameters(self):
         model_params = []
-        models = [self.rgb_model, self.depth_model]
+        models = [self.rgb_model, self.depth_model, self.bbox_head]
 
         if self.global_model:
             models.append(self.global_model)
