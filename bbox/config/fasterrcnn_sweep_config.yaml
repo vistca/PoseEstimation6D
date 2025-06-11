@@ -33,7 +33,7 @@ parameters:
     value: 5
 
   bs:
-    value:  64
+    value:  16
 
   tr:
     value: 5

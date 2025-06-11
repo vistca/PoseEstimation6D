@@ -105,9 +105,9 @@ class Tester():
                         bbox = outputs[i]['boxes'][index]
 
                     tmp = inputs["obj_id"][i].item()
-                    # print(tmp)
-                    # print(obj_id.item())
-                    if obj_id.item != int(tmp):
+                    print(tmp)
+                    print(obj_id.item())
+                    if int(obj_id.item()) != int(tmp):
                       missmatch_obj += 1
 
                     #print(outputs[i])
