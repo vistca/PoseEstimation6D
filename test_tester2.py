@@ -190,8 +190,8 @@ if __name__ == "__main__":
     extension_model_load_name = "extension_test_11_31"
     #extension_model_load_name = "extension_test_2_1"
 
-    obj_id_gt = 11
-    sample_id = 313
+    obj_id_gt = 2
+    sample_id = 13
 
     folder_id = (2-len(str(obj_id_gt))) * "0" + str(obj_id_gt)
     sample_id_4_digit = "0" * (4 - len(str(sample_id))) + str(sample_id)
@@ -314,7 +314,7 @@ if __name__ == "__main__":
     draw = ImageDraw.Draw(raw_img)
     edges = [(0,1), (0,3), (1,2), (2,3), (4,5), (4,7), (5,6), (6,7), (0,4), (1,5), (2,6), (3,7)]
 
-    draw_points_from_R_t(draw, edges, pred_t, pred_R, pred_model_3d_points, "#CC00FF")
-    draw_points_from_R_t(draw, edges, gts_t, gts_R, gt_model_3d_points, "#0C8F00")
+    draw_points_from_R_t(draw, edges, pred_t, pred_R, pred_model_3d_points, "#FF0000")
+    draw_points_from_R_t(draw, edges, gts_t, gts_R, gt_model_3d_points, "#FBFF00")
 
     raw_img.show()
