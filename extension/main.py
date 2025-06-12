@@ -6,6 +6,7 @@ from .models.depth_nn import DepthNN
 from .models.rgb_nn import RgbNN
 from .models.combined_model import CombinedModel
 from .models.combined_model_2 import CombinedModel2
+from .models.combined_model_3 import CombinedModel3
 from timm.data.loader import MultiEpochsDataLoader
 from prep_data import download_data, yaml_to_json
 #from .data.extension_dataset import ExtensionDataset
@@ -38,6 +39,8 @@ def run_program(args):
     
     if args.fm == "cm2":
         model = CombinedModel2(device, args.mod)
+    elif args.fm == "cm3":
+         model = CombinedModel3(device, args.mod)
     else:
          model = CombinedModel(device, args.mod)
 
