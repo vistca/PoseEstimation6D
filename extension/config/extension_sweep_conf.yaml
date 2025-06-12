@@ -15,26 +15,24 @@ metric:
 parameters:
 
   lr:
-    distribution: categorical
-    values: [0.001, 0.0001]
+    value: 0.001
 
   optimizer:
-    distribution: categorical
-    values: ["Adam", "AdamW"]
+    value: "Adam"
 
   scheduler:
     value: "CosineAnnealingWarmRestarts"
 
   mod:
     distribution: categorical
-    values: ["bb8_1", "bb8_2", "bb8_3"]
+    values: ["bb8_1", "bb8_3"]
 
   fm: 
     distribution: categorical
     values: ["cm", "cm2"]
 
   epochs:
-    value: 10
+    value: 20
 
   bs:
     value: 64

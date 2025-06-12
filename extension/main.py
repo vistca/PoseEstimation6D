@@ -60,7 +60,7 @@ def run_program(args):
     optimloader = OptimLoader(args.optimizer, model_params, args.lr)
     optimizer = optimloader.get_optimizer()
 
-    schedulerloader = ScheduleLoader(optimizer, args.scheduler, 6, 10)
+    schedulerloader = ScheduleLoader(optimizer, args.scheduler, 3, 10)
     scheduler = schedulerloader.get_scheduler()
 
     trainer = Trainer(model, optimizer, args, scheduler)#, wandb_instance, scheduler)
