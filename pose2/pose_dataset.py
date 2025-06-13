@@ -264,6 +264,10 @@ class PoseEstDataset(Dataset):
         cropped = depth_raw[y_min:y_max, x_min:x_max]
         resized = cv2.resize(cropped, self.dimensions)
         depth = resized.astype(np.float32) / 1000.0
+
+        average_mean = 0.864
+        average_std = 0.187
+        depth = (depth - average_mean) / (average_std + 1e-8) # to avoid division by zero
         
         # If we want to visualize the depth crop
         # plt.imshow(depth)
