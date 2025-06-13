@@ -235,30 +235,42 @@ class PoseEstDataset(Dataset):
         #text = img_path
         #position = (10, 10)
         #draw.text(position, text, fill=(128, 0, 128), font=font)
-        #plt.imshow(img)
-        #plt.axis("off")
-        #plt.show()
+        # plt.imshow(img)
+        # plt.axis("off")
+        # plt.show()
 
         if self.split == "train":
             return self.train_transform(img)
         
         return self.val_test_transform(img)
-    
+
+
     def load_depth(self, depth_path, bbox, padding=0.1):
         """Load a depth image and convert to tensor."""
-        depth = Image.open(depth_path)
-        depth = self.rgb_crop_img(depth, bbox, padding)
+        
+        x_min, y_min, x_max, y_max = map(int, bbox)
+        m = padding
+
+        pad_x = int(m * (x_max - x_min))
+        pad_y = int(m * (y_max - y_min))
+
+        x_min = max(0, x_min - pad_x)
+        y_min = max(0, y_min - pad_y)
+        x_max = min(640, x_max + pad_x)
+        y_max = min(480, y_max + pad_y)
+
+        depth_raw = cv2.imread(depth_path, cv2.IMREAD_UNCHANGED)
+        
+        cropped = depth_raw[y_min:y_max, x_min:x_max]
+        resized = cv2.resize(cropped, self.dimensions)
+        depth = resized.astype(np.float32) / 1000.0
         
         # If we want to visualize the depth crop
-        #plt.imshow(depth)
-        #plt.axis("off")
-        #plt.show()
+        # plt.imshow(depth)
+        # plt.axis("off")
+        # plt.show()
 
-        depth = depth.resize(self.dimensions)
-        depth = np.array(depth).astype(np.float32)
-        depth = torch.from_numpy(depth)
-        #print(depth)
-        return depth
+        return torch.tensor(depth)
 
     
     def rgb_crop_img(self, rgb_img, b, m): # b is the bounding box for the image and m is the wanted margin
