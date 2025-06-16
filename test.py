@@ -43,11 +43,11 @@ def transform_data(image, bounding_box, padding, dims, is_img=False):
 
 class Tester():
 
-    def __init__(self, boxModel, poseModel, dataset_root, run_extension,padding=0.2):
+    def __init__(self, boxModel, poseModel, dataset_root, run_extension, dims, padding=0.2):
         
         self.boxModel = boxModel
         self.poseModel = poseModel
-        self.dims = self.poseModel.get_dimensions()
+        self.dims = dims
         self.padding = padding
         self.run_extension = run_extension
         
@@ -165,8 +165,7 @@ class Tester():
                 if run_extension:
                     inputs = {"rgb" : images, "depth" : depths}
                 else:
-
-                    inputs = images
+                    inputs = {"rgb": images}
                 
 
                 # Do a forward pass to the second model
@@ -274,7 +273,7 @@ class Tester():
 
 if __name__ == "__main__":
     batch_size = 16
-    run_extension = True
+    run_extension = False
 
     box_model_name = "transform"
     #box_model_load_name = "Transform_3tr_ep3"
@@ -283,7 +282,6 @@ if __name__ == "__main__":
 
 
     comb_model_name = "bb8_1"
-    pose_model_load_name = "extension_test_11_31"
     #extension_model_load_name = "extension_test_15_92"
 
 
@@ -307,22 +305,26 @@ if __name__ == "__main__":
     print("Bbox model loaded")
 
     if run_extension:
+        pose_model_load_name = "extension_test_11_31"
         model = CombinedModel(device, comb_model_name)
         load_path = f"extension/checkpoints/{pose_model_load_name}.pt"
         model.load_state_dict(torch.load(load_path, weights_only=True, map_location=device.type))
         print("Extension models loaded")
         model.to(device)
+        dims = model.get_dimensions()
 
     else:
         model_name = "bb8_1"
-        load_path = f"extension/checkpoints/{pose_model_load_name}.pt"
+        pose_model_load_name = "pose_model"
+        load_path = f"pose2/checkpoints/{pose_model_load_name}.pt"
         model = create_model(model_name) 
         model.load_state_dict(torch.load(load_path, weights_only=True, map_location=device.type))
         print("RGB data pose model loaded")
         model.to(device)
+        dims = model.get_dimension()
 
-    test_dataset = CombinedDataset(dataset_root, split_percentage, model.get_dimensions(), split="test")
+    test_dataset = CombinedDataset(dataset_root, split_percentage, dims, split="test")
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=2)
 
-    test_cls = Tester(bbox_model, model, dataset_root, run_extension)
+    test_cls = Tester(bbox_model, model, dataset_root, run_extension, dims)
     test_cls.validate(test_loader, device)
