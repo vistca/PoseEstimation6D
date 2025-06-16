@@ -248,31 +248,13 @@ class PoseEstDataset(Dataset):
     def load_depth(self, depth_path, bbox, padding=0.1):
         """Load a depth image and convert to tensor."""
         
-        x_min, y_min, x_max, y_max = map(int, bbox)
-        m = padding
-
-        pad_x = int(m * (x_max - x_min))
-        pad_y = int(m * (y_max - y_min))
-
-        x_min = max(0, x_min - pad_x)
-        y_min = max(0, y_min - pad_y)
-        x_max = min(640, x_max + pad_x)
-        y_max = min(480, y_max + pad_y)
-
-        depth_raw = cv2.imread(depth_path, cv2.IMREAD_UNCHANGED)
-        
-        cropped = depth_raw[y_min:y_max, x_min:x_max]
-        resized = cv2.resize(cropped, self.dimensions)
-        depth = resized.astype(np.float32) / 1000.0
-
-        average_mean = 0.864
-        average_std = 0.187
-        depth = (depth - average_mean) / (average_std + 1e-8) # to avoid division by zero
-        
-        # If we want to visualize the depth crop
+        depth = Image.open(depth_path)
+        depth = self.rgb_crop_img(depth, bbox, 0.2)
+        depth = depth.resize(self.dimensions)
         # plt.imshow(depth)
         # plt.axis("off")
         # plt.show()
+        depth = np.array(depth).astype(np.float32)
 
         return torch.tensor(depth)
 
