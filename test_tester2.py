@@ -166,7 +166,7 @@ def draw_points_from_R_t(draw, edges, pred_t, pred_R, points_3d, color):
     for edge in edges:
         x1, y1 = resulting_points[edge[0]]
         x2, y2 = resulting_points[edge[1]]
-        draw.line(((x1, y1), (x2, y2)), fill=color, width=2)
+        draw.line(((x1, y1), (x2, y2)), fill=color, width=3)
 
 def project_to_2d(coord):
     K = np.array([
@@ -190,8 +190,8 @@ if __name__ == "__main__":
     extension_model_load_name = "extension_test_11_31"
     #extension_model_load_name = "extension_test_2_1"
 
-    obj_id_gt = 8
-    sample_id = 20
+    obj_id_gt = 2
+    sample_id = 1000
 
     folder_id = (2-len(str(obj_id_gt))) * "0" + str(obj_id_gt)
     sample_id_4_digit = "0" * (4 - len(str(sample_id))) + str(sample_id)
@@ -314,8 +314,19 @@ if __name__ == "__main__":
     draw = ImageDraw.Draw(raw_img)
     edges = [(0,1), (0,3), (1,2), (2,3), (4,5), (4,7), (5,6), (6,7), (0,4), (1,5), (2,6), (3,7)]
 
-    draw_points_from_R_t(draw, edges, gts_t, gts_R, gt_model_3d_points, "#00D9FF")
-    draw_points_from_R_t(draw, edges, pred_t, pred_R, pred_model_3d_points, "#FF7B00")
+    color_gt = "#00D9FF"
+    color_pred = "#FF7B00"
+
+    draw_points_from_R_t(draw, edges, gts_t, gts_R, gt_model_3d_points, color_gt)
+    draw_points_from_R_t(draw, edges, pred_t, pred_R, pred_model_3d_points, color_pred)
+
+    draw.rectangle([470, 10, 630, 70], fill="#FFFFFF")
+    draw.rectangle([475, 15, 495, 35], fill=color_pred)
+    draw.rectangle([475, 45, 495, 65], fill=color_gt)
+
+    font = ImageFont.truetype("arial.ttf", 20)
+    draw.text((505, 15), "Prediction", fill="black", font=font)
+    draw.text((505, 45), "Ground Truth", fill="black", font=font)
 
 
     raw_img.show()
