@@ -122,23 +122,3 @@ class CustomLossFunctions():
             total_loss += 0.01 * ortho_penalty
 
         return total_loss / batch_size
-
-        
-# loss_function = CustomLossFunctions()
-
-# preds = np.array([
-#                 [0,0,0, 1,0,0, 0,1,0, 0,0,1],
-#                 [3,1,1, 1,0,0, 0,1,0, 0,0,1],
-#             ], dtype=np.float32)
-# preds = torch.tensor(preds)
-
-# targets = np.array([
-#                 [10,0,0, 1,0,0, 0,1,0, 0,0,1],
-#                 [1,1,1, 1,0,0, 0,1,0, 0,0,1],
-#             ], dtype=np.float32)
-# targets = torch.tensor(targets)
-
-# ids = ["3", "10"]
-
-# print(loss_function.loss(preds, targets, ids).item())
-

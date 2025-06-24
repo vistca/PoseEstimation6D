@@ -37,8 +37,6 @@ class Tester():
 
                 inputs = {}
                 inputs["rgb"] = batch["rgb"].to(device)
-                #inputs["bbox"] = batch["bbox"].to(device)
-                #inputs["obj_id"] = batch["obj_id"].to(device).long()
 
                 pred_points = self.model(inputs) # Forward pass
 

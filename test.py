@@ -81,17 +81,9 @@ class Tester():
                 inputs["rgb"] = batch["rgb"].to(device)
                 inputs["obj_id"] = batch["obj_id"].to(device)
                 diameters = batch["diameter"]
-                #print(inputs["rgb"])
-                # Calculates the bbox and ids for each sample
                 outputs = self.boxModel(inputs["rgb"])
-                # Output: [{bbox1, label1}, {bbox2, label2}]
                 nr_datapoints = len(outputs)
-                #print(outputs)
-                
-                # TODO: Check that this actually produces the correct thing
-                # what we want to do is to convert the shape to the same as we would 
-                # otherwise expect the bbox and id to be
-                # TODO: Might not need to send to device
+
                 bboxes = np.empty((nr_datapoints, 4))
                 ids = np.empty((nr_datapoints))
                 for i in range(len(outputs)):
@@ -110,28 +102,11 @@ class Tester():
                     if int(obj_id.item()) != int(tmp):
                       missmatch_obj += 1
 
-                    #print(outputs[i])
                     bboxes[i] = bbox.cpu()
                     ids[i] = obj_id.cpu()
                 bboxes = torch.from_numpy(bboxes).to(device)
                 ids = torch.from_numpy(ids).to(device)
                 
-                #print(batch['img_path'][0])c
-                #print(batch['depth_path'][0])
-
-
-                
-                #print(f"Pred bbox: {bboxes[0]}")
-                #print(f"True bbox: {batch["bbox"][0]}")
-                #print(ids)
-
-                #bboxes = batch["bbox"]
-
-                
-
-                # Pass this to the second model responsible for pose est
-                
-                #nr_datapoints = bboxes.shape[0]
 
                 images = np.empty((nr_datapoints, 3, self.dims[0], self.dims[1]))
                 depths = np.empty((nr_datapoints, 1, self.dims[0], self.dims[1]))
@@ -139,24 +114,16 @@ class Tester():
                     bounding_box = bboxes[i]
                     img_path = batch["img_path"][i]
                     img = Image.open(img_path) 
-                    #img = batch["original_img"][i]
                     img = rgb_crop_img(img, bounding_box, self.padding)
                     img = img.resize(self.dims)
-                    #img.show()
                     img = self.transform(img)
 
                     depth_path = batch["depth_path"][i]
                     depth = Image.open(depth_path)
-                    #depth = batch["original_depth"][i]
                     depth = rgb_crop_img(depth, bounding_box, self.padding)
                     depth = depth.resize(self.dims)
                     depth = np.array(depth).astype(np.float32)
                     depth = torch.from_numpy(depth).unsqueeze(0)
-                    # We have to permutate since PIL changes the shape from (C, H, W) -> (H, W, C)
-                    #img = transform_data(img, bbox, self.padding, self.dims)
-                    #print(img)
-                    #depth = transform_data(depth, bbox, self.padding, self.dims, is_img=False).unsqueeze(0)
-                    #print(depth)
                     images[i] = img
                     depths[i] = depth
 

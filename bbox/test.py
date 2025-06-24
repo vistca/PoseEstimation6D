@@ -37,18 +37,13 @@ class Tester:
                     }
                     targets.append(target)
 
-                # Forward pass
-
-                # weird quirk with eval() only returning predictions. Probably
-                # bad practice to elvaluate in train() mode.
-
-                # doing it like this takes forever, might need to check this and update it accordingly
-
+                # Has to set the model to train and then eval again in order to get both
+                # loss and predictions. In train mode we get loss, in eval we get preds. 
+                # This is due to the torchvision implementation
                 self.model.train()
                 loss_dict = self.model(images, targets)
                 self.model.eval()
 
-                #print(type(loss_dict), loss_dict)  # Debugging output
                 loss = sum(loss for loss in loss_dict.values())
 
                 val_loss += loss.item()

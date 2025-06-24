@@ -1,9 +1,7 @@
 from tqdm import tqdm
 import time
 import statistics
-import torch
 from torch.amp import autocast, GradScaler
-from torchmetrics.detection.mean_ap import MeanAveragePrecision
 
 class Trainer():
 
@@ -14,8 +12,6 @@ class Trainer():
         self.scheduler = scheduler
 
     def train_one_epoch(self, train_loader, device):
-
-        metric = MeanAveragePrecision()
 
         self.model.train()
         total_loss = 0.0
@@ -39,18 +35,16 @@ class Trainer():
             images = batch["rgb"].to(device)
             targets = []
 
-            # We must be able to improve/remove this loop
             for i in range(images.shape[0]):
                 target = {}
-                target["boxes"] = batch["bbox"][i].to(device).unsqueeze(0)  # Add batch dimension
-                target["labels"] = batch["obj_id"][i].to(device).long().unsqueeze(0)  # Add batch dimension
+                target["boxes"] = batch["bbox"][i].to(device).unsqueeze(0)
+                target["labels"] = batch["obj_id"][i].to(device).long().unsqueeze(0)
                 targets.append(target)
             
             end = time.perf_counter()
             timings["load"].append(end - start)
 
             start = time.perf_counter()
-            # Using mixed precision training
             if device.type == 'cuda':
                 with autocast(device.type):
                     loss_dict = self.model(images, targets)
@@ -69,11 +63,7 @@ class Trainer():
 
             start = time.perf_counter()
             
-            # Added parts so we only decrease the learning rate if the loss was not scaled.
-            # If the loss was scaled then it isn't any reason to reduce it since it will
-            # not be representative of the actual decrease
             scaler.scale(loss).backward()
-            scaled_factor = scaler.get_scale()
             scaler.step(self.optimizer)
             scaler.update()
 
@@ -88,31 +78,10 @@ class Trainer():
                                      box_reg=loss_box_reg/(batch_id + 1))
             
 
-        # Inference for mAP
-
-        #val_metrics = metric.compute()
-
         avg_loss = total_loss / len(train_loader)
         self.scheduler.step()
         print("LR is: ", self.scheduler._last_lr[0])
 
-
-
-        # self.wandb_instance.log_metric({"Training total_loss" : avg_loss,
-        #                                 "Training class_loss" : loss_classifier / len(train_loader),
-        #                                 "Training box_loss" : loss_box_reg / len(train_loader),
-        #                                 "Training background_loss" : loss_objectness / len(train_loader),
-        #                                 "Training rpn_box_loss" : loss_rpn_box_reg / len(train_loader)
-        #                                 })
-        
-
-        # self.wandb_instance.log_metric({
-        #                                 "DL update iter" : statistics.median(timings["DL update iter"]),
-        #                                 "Time load_data" : statistics.median(timings["load"]),
-        #                                 "Time fit/calc_loss" : statistics.median(timings["fit/loss"]),
-        #                                 "Time backprop" : statistics.median(timings["backprop"]),
-        #                             })
-    
         return {
             "Average training loss" : round(avg_loss, 4),
             "Average training mAP" : 1,

@@ -22,13 +22,9 @@ class WandbSetup():
                 except:
                     raise("Login to wandb failed, provided key is invalid")
                 
-            # Start a new wandb run to track this script.
             self.run = wandb.init(
-                # Set the wandb entity where your project will be logged (generally your team name).
                 entity="fantastic_4_0",
-                # Set the wandb project where this run will be logged.
                 project=project_name,
-                # Track hyperparameters and run metadata.
                 config=args,  
             )
             print("Login complete")

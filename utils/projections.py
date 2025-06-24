@@ -60,16 +60,3 @@ def directions_from_bboxs(bboxes: torch.Tensor):
     return torch.tensor(directions)
 
 
-
-# bboxes = np.array([
-#         [50, 50, 50, 50],
-#         [100, 50, 100, 50]
-#     ], dtype=float)
-
-# bboxes = torch.tensor(bboxes)
-
-# directions = directions_from_bboxs(bboxes)
-
-# print(directions.shape)
-# print(directions)
-

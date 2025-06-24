@@ -50,7 +50,7 @@ python -m visualize
 To train and run phase 2, i.e just retrieving the the 2d bounding boxes run the following
 
 ```
-python -m bbox.main --{args}
+python -m bbox.main --{args} --no-log
 
 The arguments include:
 - lr:  learning rate
@@ -70,7 +70,7 @@ The arguments include:
 To train and run phase 3, i.e estimating the 6d pose from rgb images run the following
 
 ```
-python -m pose.main --{args}
+python -m pose.main --{args} --no-log
 
 The arguments include:
 - lr:  learning rate
@@ -90,7 +90,7 @@ The arguments include:
 To train and run phase 4, i.e estimating the 6d pose from rgb and depth images run the following
 
 ```
-python -m extension.main --{args}
+python -m extension.main --{args} --no-log
 
 The arguments include:
 - lr:  learning rate
