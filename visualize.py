@@ -37,18 +37,6 @@ def load_pose_data(dataset_root):
 
     return pose_data
 
-def calc_add(reconstruction_3d,obj, gts_t, gts_R):
-    ply_objs = get_ply_files()
-    pred_t = reconstruction_3d[0, :3]
-    pred_R = reconstruction_3d[0, 3:].reshape((3,3))
-
-    gt_t = gts_t
-    gt_R = gts_R.reshape((3,3))
-
-    model_points = ply_objs[obj]
-
-    add = compute_ADD(model_points, gt_R, gt_t, pred_R, pred_t)
-    print("This was the add: ", add)
 
 def rec_3d_points_from_pred(preds: torch.Tensor, models_points_3d, nr_datapoints, flatten=False):
 
@@ -115,6 +103,84 @@ def rescale_pred(preds: torch.Tensor, bboxes: torch.Tensor, nr_datapoints):
 
     return preds
 
+def model_predict(model, image, device):
+    with torch.no_grad():
+        image = image.to(device)
+        prediction = model(image.unsqueeze(0))  # Add batch dimension
+    return prediction
+
+def load_model(model_path, device):
+
+    # model is hardcoded for now
+
+    wrapper = FasterRCNN(3, "transform")
+    model = wrapper.get_model()  # Get the actual nn.Module
+    checkpoint = torch.load(model_path, map_location=device)
+    model.load_state_dict(checkpoint)
+    model.to(device)
+    model.eval()
+    return model
+
+def predict_bbox(img, device):
+    model_path = "bbox/checkpoints/peach-sweep-1.pt " # Transform_aug .pt"  # Adjust according to checkpoint
+
+    model = load_model(model_path, device)
+
+    pred = model_predict(model, img, device)
+    pred_bbox = pred[0]["boxes"].tolist()
+    pred_obj_id = pred[0]["labels"].tolist()
+    
+    return pred_bbox, pred_obj_id
+
+def get_model_3d_points(info):
+    x_size = info['size_x']
+    y_size = info['size_y']
+    z_size = info['size_z']
+
+    half_x = x_size / 2
+    half_y = y_size / 2
+    half_z = z_size / 2
+
+    model_points_3d = np.array([
+        [-half_x, -half_y, -half_z],
+        [half_x, -half_y, -half_z],
+        [half_x, half_y, -half_z],
+        [-half_x, half_y, -half_z],
+        [-half_x, -half_y, half_z],
+        [half_x, -half_y, half_z],
+        [half_x, half_y, half_z],
+        [-half_x, half_y, half_z]
+    ], dtype=np.float32)
+    return model_points_3d
+
+def draw_points_from_R_t(draw, edges, pred_t, pred_R, points_3d, color):
+    rotated_points = (pred_R @ points_3d.T).T
+
+    resulting_points = []
+
+    for i in range(8):
+        translated_points = rotated_points[i] + pred_t.T
+        point = project_to_2d(translated_points.numpy())
+        resulting_points.append(point)
+
+    for edge in edges:
+        x1, y1 = resulting_points[edge[0]]
+        x2, y2 = resulting_points[edge[1]]
+        draw.line(((x1, y1), (x2, y2)), fill=color, width=3)
+
+def project_to_2d(coord):
+    K = np.array([
+        [572.4114, 0.0, 325.2611],
+        [0.0, 573.57043, 242.04899],
+        [0.0, 0.0, 1.0]
+    ]) # The camera matrix
+
+    # The two dimensional coordinates derived through projection
+    x = (K[0, 0] * coord[0] / coord[2]) + K[0, 2]
+    y = (K[1, 1] * coord[1] / coord[2]) + K[1, 2]
+
+    return (x, y)
+    
 
 if __name__ == "__main__":
     dataset_root = "./datasets/Linemod_preprocessed/"
@@ -123,20 +189,19 @@ if __name__ == "__main__":
     #extension_model_load_name = "extension_test_11_31"
     extension_model_load_name = "extension_test_11_31"
     #extension_model_load_name = "extension_test_2_1"
+
+    obj_id_gt = 2   #  <--- change to another object in [1, 2, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15]
+    sample_id = 500   #  <--- change to another file from 1 to 1000
+
+    folder_id = (2-len(str(obj_id_gt))) * "0" + str(obj_id_gt)
+    sample_id_4_digit = "0" * (4 - len(str(sample_id))) + str(sample_id)
+    img_path = f"./datasets/Linemod_preprocessed/data/{folder_id}/rgb/{sample_id_4_digit}.png"
+    depth_path = f"./datasets/Linemod_preprocessed/data/{folder_id}/depth/{sample_id_4_digit}.png"
     
-    obj_id = 5
-    folder_id = "05"
-    sample_id = "313"
-    img_path = "./datasets/Linemod_preprocessed/data/05/rgb/0313.png"
-    depth_path = "./datasets/Linemod_preprocessed/data/05/depth/0313.png"
-    
-    
-    bbox = [257.4022,  97.1515, 338.0164, 242.8628]
-    #bbox = [258.,  99., 338., 244.]
+
     dims = (224, 224)
 
     pose_data = load_pose_data(dataset_root)
-
 
     pose_data = pose_data[folder_id]
     sample_id = str(sample_id)
@@ -164,26 +229,49 @@ if __name__ == "__main__":
     with open(obj_path, 'r') as f:
         models_info = yaml.load(f, Loader=yaml.FullLoader)
 
-
+    resize_transform = transforms.Compose([
+        transforms.Resize(dims)
+    ])
 
     val_test_transform = transforms.Compose([
-            transforms.Resize(dims),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])
         ])
     
     
-    img = Image.open(img_path).convert("RGB")
-    img = rgb_crop_img(img, bbox, 0.1)
-    # plt.imshow(img)
-    # plt.axis("off")
-    # plt.show()
-    img = val_test_transform(img).unsqueeze(0)
-    #plt.show(img)
+    raw_img = Image.open(img_path).convert("RGB")
+    
+    img = val_test_transform(raw_img)
+    
+
+    pred_bbox, pred_obj_id = predict_bbox(img, device)
+
+    pred_bbox = pred_bbox[0]
+    pred_obj_id = pred_obj_id[0]
+
+    gt_bbox = pose['obj_bb']
+    gt_bbox = [gt_bbox[0], gt_bbox[1], gt_bbox[0]+gt_bbox[2], gt_bbox[1]+gt_bbox[3]]
+    gt_id = pose['obj_id']
+
+
+    print("predicted bbox and id:")
+    print(pred_bbox)
+    print(pred_obj_id)
+
+    print("ground truth bbox and id")
+    print(gt_bbox)
+    print(gt_id)
+
+
+    
+    crop = rgb_crop_img(raw_img, pred_bbox, 0.2)
+    crop = resize_transform(crop)
+    crop = val_test_transform(crop)
+    crop = crop.unsqueeze(0)
 
     depth = Image.open(depth_path)
-    depth = rgb_crop_img(depth, bbox, 0.1)
+    depth = rgb_crop_img(depth, pred_bbox, 0.2)
     depth = depth.resize(dims)
     # plt.imshow(depth)
     # plt.axis("off")
@@ -199,13 +287,13 @@ if __name__ == "__main__":
     print("Extension models loaded")
     extension_model.eval()
     
-    inputs = {"rgb" : img, "depth" : depth}
+    inputs = {"rgb" : crop, "depth" : depth}
 
     pred_points = extension_model(inputs)
-    bboxes = torch.from_numpy(np.array(bbox)).unsqueeze(0)
+    bboxes = torch.from_numpy(np.array(pred_bbox)).unsqueeze(0)
     pred_points = rescale_pred(pred_points, bboxes, 1)
 
-    model_point_3d = get_3d_bbox_points(models_info, obj_id)#batch["points_3d"]
+    model_point_3d = get_3d_bbox_points(models_info, obj_id_gt)#batch["points_3d"]
     model_point_3d = torch.from_numpy(model_point_3d).unsqueeze(0)
     reconstruction_3d = rec_3d_points_from_pred(pred_points, model_point_3d, 1)
     pred_t = reconstruction_3d[0, :3]
@@ -216,12 +304,29 @@ if __name__ == "__main__":
     
     print(pred_R)
     print(gts_R)
-    calc_add(reconstruction_3d, obj_id, gts_t, gts_R)
 
-    # Point pred vs GT (Gt second)
-    #0.3994, 0.6850, 0.4030, 0.7621, 0.5324, 0.7345, 0.5614, 0.7192, 0.3581, 0.0368, 0.3811, 0.1069, 0.5011, 0.1229, 0.4939, 0.0832
-    #0.3963, 0.6848, 0.4011, 0.7603, 0.5326, 0.7343, 0.5616, 0.7197, 0.3577,  0.0370, 0.3807, 0.1064, 0.5006, 0.1216, 0.4955, 0.0839
+    pred_model_info = models_info[pred_obj_id]
+    gt_model_info = models_info[gt_id]
+
+    pred_model_3d_points = get_model_3d_points(pred_model_info)
+    gt_model_3d_points = get_model_3d_points(gt_model_info)
     
-    # Translation + Rotation, pred vs GT (GT second)
-    #1.4105e+05,  1.0473e+05, -2.4858e+05,  9.9848e-01,  5.4325e-02, 8.9688e-03, -2.7136e-02,  3.4379e-01,  9.3865e-01,  4.7909e-02, -9.3747e-01,  3.4474e-01
-    #1.4106e+05,  1.0473e+05, -2.4859e+05,  9.9881e-01,  4.8395e-02, 6.2389e-03, -2.2478e-02,  3.4285e-01,  9.3912e-01,  4.3309e-02, -9.3814e-01,  3.4353e-01
+    draw = ImageDraw.Draw(raw_img)
+    edges = [(0,1), (0,3), (1,2), (2,3), (4,5), (4,7), (5,6), (6,7), (0,4), (1,5), (2,6), (3,7)]
+
+    color_gt = "#00D9FF"
+    color_pred = "#FF7B00"
+
+    draw_points_from_R_t(draw, edges, gts_t, gts_R, gt_model_3d_points, color_gt)
+    draw_points_from_R_t(draw, edges, pred_t, pred_R, pred_model_3d_points, color_pred)
+
+    draw.rectangle([470, 10, 630, 70], fill="#FFFFFF")
+    draw.rectangle([475, 15, 495, 35], fill=color_pred)
+    draw.rectangle([475, 45, 495, 65], fill=color_gt)
+
+    font = ImageFont.truetype("arial.ttf", 20)
+    draw.text((505, 15), "Prediction", fill="black", font=font)
+    draw.text((505, 45), "Ground Truth", fill="black", font=font)
+
+
+    raw_img.show()

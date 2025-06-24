@@ -207,7 +207,6 @@ class Tester():
 
                 progress_bar.set_postfix(total="Placeholder")
 
-                break
 
         avg_add_total = add_total[0] / add_total[1]
         percentage_below_2cm = 100*below_2cm[0]/below_2cm[1]
