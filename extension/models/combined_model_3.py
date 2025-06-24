@@ -4,7 +4,7 @@ from .depth_nn import DepthNN
 from .rgb_nn import RgbNN
 from pose2.models.model_creator import create_model
 
-class CombinedModel(nn.Module):
+class CombinedModel3(nn.Module):
 
     def __init__(self, device, pose_name):
         super().__init__()
@@ -26,10 +26,19 @@ class CombinedModel(nn.Module):
         
         self.pose_model = self.pose_model.to(device)
 
-        split_model_out_channels = int(out_features/2)
+        split_model_out_channels = int(out_features/4)
         self.rgb_model = RgbNN(split_model_out_channels, kernel_size, stride, padding, bias).to(device)
         self.depth_model = DepthNN(split_model_out_channels, kernel_size, stride, padding, bias).to(device)
-        self.global_model = None
+        
+        self.global_model = nn.Sequential(
+            nn.Conv2d(in_channels=split_model_out_channels*2, out_channels=8, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(num_features=8),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=8, out_channels=16,  kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(num_features=16),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=16, out_channels=32,  kernel_size=3, stride=1, padding=1),
+        ).to(device)
 
     """
         Here we do the forward pass and pass the image to the different parts of the model
@@ -40,16 +49,12 @@ class CombinedModel(nn.Module):
         imgs = x["rgb"]
         depth = x["depth"]
 
-        
-
         rgb_output = self.rgb_model.forward(imgs)
         depth_output = self.depth_model.forward(depth)
 
         pose_input = torch.concat([rgb_output, depth_output], dim=1)
-
-        if self.global_model: 
-            global_features = self.global_model.forward(pose_input)
-            pose_input = torch.concat([pose_input, global_features], dim=1)
+        global_features = self.global_model.forward(pose_input)
+        pose_input = torch.concat([pose_input, global_features], dim=1)
 
         return self.pose_model({"rgb": pose_input})  
     

@@ -11,3 +11,5 @@ timm
 torchmetrics
 pycocotools
 plyfile
+opencv-python
+kornia

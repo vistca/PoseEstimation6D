@@ -32,20 +32,19 @@ def run_program(args):
         yaml_to_json(args.data + "Linemod_preprocessed/data/")
         transfer_data("./datasets/Linemod_preprocessed/models/", "models_info")
 
-
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    
+    selected_model = create_model(args.mod)
+    model = selected_model.to(device)
+    model_params = [p for p in model.parameters() if p.requires_grad]
+    
     if args.lm != "":
         try:
             load_path = f"{runtime_dir_path}/checkpoints/{args.lm}.pt"
             model.load_state_dict(torch.load(load_path, weights_only=True, map_location=device.type))
             print("Model loaded")
         except:
-             raise("Could not load the model, might be due to missmatching models or something else")
-
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    
-    selected_model = create_model(args.mod)
-    model = selected_model.to(device)
-    model_params = [p for p in model.parameters() if p.requires_grad]
+                raise("Could not load the model, might be due to missmatching models or something else")
     
     optimloader = OptimLoader(args.optimizer, model_params, args.lr)
     optimizer = optimloader.get_optimizer()

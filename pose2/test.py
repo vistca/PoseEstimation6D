@@ -4,13 +4,15 @@ from pose2.utils.add_calc import compute_ADD
 import torch
 from tqdm import tqdm
 
+
 class Tester():
 
-    def __init__(self, model, epochs):
+    def __init__(self, model, args):
         self.model = model
         self.loss_fn = torch.nn.MSELoss()
-        self.num_epochs = epochs
+        self.args = args
         self.ply_objs = get_ply_files()
+
 
     def validate(self, val_loader, device, type="Val"):
         # Validation phase
@@ -25,18 +27,18 @@ class Tester():
 
         with torch.no_grad(): # Disable gradient calculation for validation
             if type == "Val":
-                desc = f"Val"
+                desc = f" Val"
             else:
                 desc = "Test"
             progress_bar = tqdm(val_loader, desc=desc, ncols=100)
+
 
             for batch_id, batch in enumerate(progress_bar):
 
                 inputs = {}
                 inputs["rgb"] = batch["rgb"].to(device)
-                inputs["depth"] = batch["depth"].to(device)
-                inputs["bbox"] = batch["bbox"].to(device)
-                inputs["obj_id"] = batch["obj_id"].to(device).long()
+                #inputs["bbox"] = batch["bbox"].to(device)
+                #inputs["obj_id"] = batch["obj_id"].to(device).long()
 
                 pred_points = self.model(inputs) # Forward pass
 
@@ -125,4 +127,4 @@ class Tester():
                 f"{type} below_2cm" : percentage_below_2cm,
                 f"{type} below_10%_diameter" : percentage_below_10_dia
             }, avg_add_total
-    
+

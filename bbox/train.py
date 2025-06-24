@@ -32,7 +32,7 @@ class Trainer():
         for batch_id, batch in enumerate(progress_bar):
             end = time.perf_counter()
             self.optimizer.zero_grad(set_to_none=True)
-            self.model.train()
+
             timings["DL update iter"].append(end - start)
             
             start = time.perf_counter()
@@ -56,23 +56,6 @@ class Trainer():
                     loss_dict = self.model(images, targets)
             else:
                 loss_dict = self.model(images, targets)
-            
-            # self.model.eval()
-            # outputs = self.model(images)
-            # preds = []
-            # gts = []
-            # for pred, tgt in zip(outputs, targets):
-            #     preds.append({
-            #         "boxes": pred["boxes"].cpu(),
-            #         "scores": pred["scores"].cpu(),
-            #         "labels": pred["labels"].cpu()
-            #     })
-            #     gts.append({
-            #         "boxes": tgt["boxes"].cpu(),
-            #         "labels": tgt["labels"].cpu()
-            #     })
-
-            # metric.update(preds, gts)
               
 
             loss_classifier += loss_dict["loss_classifier"].item()
@@ -93,12 +76,6 @@ class Trainer():
             scaled_factor = scaler.get_scale()
             scaler.step(self.optimizer)
             scaler.update()
-            if not scaled_factor <= scaler.get_scale() and self.scheduler:
-                if self.scheduler.__class__.__name__ == "ReduceLROnPlateau":
-                    self.scheduler.step(loss)
-                else:
-                    self.scheduler.step()
-                #self.wandb_instance.log_metric({"Learning rate after batch" : self.scheduler._last_lr})
 
             end = time.perf_counter()
             timings["backprop"].append(end - start)
@@ -116,6 +93,9 @@ class Trainer():
         #val_metrics = metric.compute()
 
         avg_loss = total_loss / len(train_loader)
+        self.scheduler.step()
+        print("LR is: ", self.scheduler._last_lr[0])
+
 
 
         # self.wandb_instance.log_metric({"Training total_loss" : avg_loss,

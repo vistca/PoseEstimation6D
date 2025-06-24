@@ -4,11 +4,13 @@ import yaml
 import torch
 from .models.depth_nn import DepthNN
 from .models.rgb_nn import RgbNN
-from .models.resnet import CustomResNet50
 from .models.combined_model import CombinedModel
+from .models.combined_model_2 import CombinedModel2
+from .models.combined_model_3 import CombinedModel3
 from timm.data.loader import MultiEpochsDataLoader
 from prep_data import download_data, yaml_to_json
-from .data.extension_dataset import ExtensionDataset
+#from .data.extension_dataset import ExtensionDataset
+from pose2.pose_dataset import PoseEstDataset
 from .test import Tester
 from .train import Trainer
 
@@ -23,15 +25,24 @@ def run_program(args):
 
     dataset_root = args.data + "/Linemod_preprocessed"
 
-    wandb_instance = WandbSetup(args, args.project)
+    wandb_instance = WandbSetup(args, "Extension")
+
+    save_name = args.sm
+    if args.sweep:
+         save_name = wandb_instance.get_run_name()
 
     if args.ld != "" and not os.path.exists(dataset_root):
         download_data(args.ld, args.data)
         yaml_to_json(args.data + "Linemod_preprocessed/data/")
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-    model = CombinedModel(device)
+    
+    if args.fm == "cm2":
+        model = CombinedModel2(device, args.mod)
+    elif args.fm == "cm3":
+         model = CombinedModel3(device, args.mod)
+    else:
+         model = CombinedModel(device, args.mod)
 
     # TODO: should look at this loading, does it load the entire model for pose or just the resnet part?
     if args.lm != "":
@@ -49,11 +60,11 @@ def run_program(args):
     optimloader = OptimLoader(args.optimizer, model_params, args.lr)
     optimizer = optimloader.get_optimizer()
 
-    schedulerloader = ScheduleLoader(optimizer, args.scheduler, args.bs, 9479)
+    schedulerloader = ScheduleLoader(optimizer, args.scheduler, 3, 10)
     scheduler = schedulerloader.get_scheduler()
 
-    trainer = Trainer(model, optimizer, wandb_instance, scheduler)
-    tester = Tester(model)
+    trainer = Trainer(model, optimizer, args, scheduler)#, wandb_instance, scheduler)
+    tester = Tester(model, args.epochs)
 
     tth = TTH(model,optimizer, 
               wandb_instance, args.epochs,
@@ -71,9 +82,9 @@ def run_program(args):
                         }
 
     
-    train_dataset = ExtensionDataset(dataset_root, split_percentage, model.get_dimensions(), split="train")
-    test_dataset = ExtensionDataset(dataset_root, split_percentage,  model.get_dimensions(), split="test")
-    val_dataset = ExtensionDataset(dataset_root, split_percentage,  model.get_dimensions(), split="val")
+    train_dataset = PoseEstDataset(dataset_root, split_percentage, model.get_dimensions(), split="train")
+    test_dataset = PoseEstDataset(dataset_root, split_percentage,  model.get_dimensions(), split="test")
+    val_dataset = PoseEstDataset(dataset_root, split_percentage,  model.get_dimensions(), split="val")
     
     train_loader = MultiEpochsDataLoader(train_dataset, batch_size=args.bs, 
                                          shuffle=True, num_workers=args.w)
@@ -86,7 +97,7 @@ def run_program(args):
 
 
     tth.train_test_val_model(train_loader, val_loader, test_loader,
-                             device, args.sm, args.test)
+                             device, save_name, args.test)
 
 
 if __name__ == "__main__":

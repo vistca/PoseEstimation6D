@@ -49,6 +49,7 @@ class Tester():
 
         print(f"Starting {type}...")
         progress_bar = tqdm(dataloader, desc=type, ncols=100)
+        below_2cm = [0,0]
         add_total = [0,0]
         add_objects = {}
 
@@ -114,16 +115,24 @@ class Tester():
 
                 progress_bar.set_postfix(total=val_loss/(batch_id + 1))
 
+                below_2cm[1] = below_2cm[1] + 1
+                if add < 20:
+                    below_2cm[0] = below_2cm[0] + 1
+
 
         avg_loss = val_loss / len(dataloader)
         avg_add_total = add_total[1] / add_total[0]
+        percentage_below_2cm = 100*below_2cm[0]/below_2cm[1]
+
         for k,v in add_objects.items():
           avg_add_obj = v[1] / v[0]
           print(f"Obj: {k}, Avg ADD: {avg_add_obj}")
         print(f"Total average ADD: {avg_add_total}")
+        print(f"Percentage below 2cm : {percentage_below_2cm}")
         
         return {
                 f"{type} total_loss" : avg_loss,
-                f"{type} total ADD" : avg_add_total
+                f"{type} total ADD" : avg_add_total,
+                f"{type} below_2cm" : percentage_below_2cm
             }, avg_loss
     

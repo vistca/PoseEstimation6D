@@ -85,7 +85,7 @@ def visualize(image, pred_bbox, pred_label, score, gt_bbox):
 
 # --- Main execution ---
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model_path = "checkpoints/Transform_aug.pt"  # Adjust according to checkpoint
+model_path = "bbox/checkpoints/Transform_aug.pt"  # Adjust according to checkpoint
 
 model = load_model(model_path, device)
 data = load_data()

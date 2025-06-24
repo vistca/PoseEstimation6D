@@ -18,15 +18,14 @@ class Trainer():
         nr_batches = 0
         self.model.train()
 
-        progress_bar = tqdm(train_loader, desc=f"Training", ncols=100)
+        progress_bar = tqdm(train_loader, desc=f"Train", ncols=100)
 
         for batch_id, batch in enumerate(progress_bar):
 
             inputs = {}
             inputs["rgb"] = batch["rgb"].to(device)
-            inputs["depth"] = batch["depth"].to(device)
-            inputs["bbox"] = batch["bbox"].to(device)
-            inputs["obj_id"] = batch["obj_id"].to(device).long()
+            #inputs["bbox"] = batch["bbox"].to(device)
+            #inputs["obj_id"] = batch["obj_id"].to(device).long()
 
             pred_points = self.model(inputs) # Forward pass: predict 2D points and ignore symmetry output
 
@@ -46,10 +45,13 @@ class Trainer():
 
         avg_loss = total_loss / len(train_loader)
 
-        self.scheduler.step()
-        print(f"Lr is {self.scheduler._last_lr[0]}")
+        if self.scheduler.__class__.__name__ == "ReduceLROnPlateau":
+            self.scheduler.step(loss)
+        else:
+            self.scheduler.step()
   
         return {
             "Training total_loss" : avg_loss,
+            "Learning rate" : self.scheduler._last_lr[0]
         }
     

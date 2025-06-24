@@ -1,0 +1,41 @@
+program: extension/main.py
+command:
+  - ${env}
+  - ${interpreter}
+  - "-m"
+  - extension.main
+  - ${args}
+
+method: grid
+
+metric:
+  name: Best validation metric
+  goal: minimize
+
+parameters:
+
+  lr:
+    value: 0.001
+
+  optimizer:
+    value: "Adam"
+
+  scheduler:
+    value: "CosineAnnealingWarmRestarts"
+
+  mod:
+    distribution: categorical
+    values: ["bb8_1", "bb8_3"]
+
+  fm: 
+    distribution: categorical
+    values: ["cm", "cm2"]
+
+  epochs:
+    value: 20
+
+  bs:
+    value: 64
+
+  sweep:
+    value: True
