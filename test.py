@@ -16,6 +16,7 @@ from pose2.models.model_creator import create_model
 from bbox.models.fasterRCNN import FasterRCNN
 from torchvision.models.detection import fasterrcnn_resnet50_fpn_v2
 from PIL import Image, ImageDraw, ImageFont
+import argparse
 
 
 def load_model_info(dataset_root):
@@ -97,8 +98,6 @@ class Tester():
                         bbox = outputs[i]['boxes'][index]
 
                     tmp = inputs["obj_id"][i].item()
-                    print(tmp)
-                    print(obj_id.item())
                     if int(obj_id.item()) != int(tmp):
                       missmatch_obj += 1
 
@@ -235,11 +234,27 @@ class Tester():
             perc_below_2_cm = 100*v[1] / v[0]
             print(f"Obj: {k}, Percentage below 2cm: {perc_below_2_cm}%, num obj: {v[0]}")
         print(f"Percentage below 2cm : {percentage_below_2cm}%")
+
+
+def add_runtime_args():
+
+    parser = argparse.ArgumentParser()
     
+    parser.add_argument('--bs', type=int,
+                    help='The bastch size', default=16)
+    
+    parser.add_argument('--extension', type=bool,
+                        help='Use extension (RGB-D) or not', default=True)
+    
+    return parser.parse_args()
+    
+ 
 
 if __name__ == "__main__":
-    batch_size = 16
-    run_extension = False
+    args = add_runtime_args()
+
+    batch_size = args.bs
+    run_extension = args.extension
 
     box_model_name = "transform"
     #box_model_load_name = "Transform_3tr_ep3"
@@ -281,7 +296,7 @@ if __name__ == "__main__":
 
     else:
         model_name = "bb8_1"
-        pose_model_load_name = "pose_model"
+        pose_model_load_name = "pose_model_12"
         load_path = f"pose2/checkpoints/{pose_model_load_name}.pt"
         model = create_model(model_name) 
         model.load_state_dict(torch.load(load_path, weights_only=True, map_location=device.type))

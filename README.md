@@ -65,12 +65,16 @@ The arguments include:
 - fm:   fasterRcnn model name
 - test:     if testing should be carried out
 ```
+For example run this:
+```
+python -m bbox.main --epochs 1 --bs 16 --no-log --sm test_model
+```
 
-### Run phase 3 separately
+### Run phase 3 separately (RGB data)
 To train and run phase 3, i.e estimating the 6d pose from rgb images run the following
 
 ```
-python -m pose.main --{args} --no-log
+python -m pose2.main --{args} --no-log
 
 The arguments include:
 - lr:  learning rate
@@ -85,8 +89,13 @@ The arguments include:
 - test:   if testing should be carried out
 
 ```
+For example run this:
+```
+python -m pose2.main --epochs 1 --bs 16 --no-log --sm test_model
+```
 
-### Run phase 4 separately
+
+### Run phase 4 separately (RGB-D data)
 To train and run phase 4, i.e estimating the 6d pose from rgb and depth images run the following
 
 ```
@@ -103,4 +112,10 @@ The arguments include:
 - sm:   name for saving model
 - mod:   the name of the model that should be used  
 - test:   if testing should be carried out
+
+```
+
+For example run this:
+```
+python -m extension.main --epochs 1 --bs 16 --no-log --sm test_model
 ```
