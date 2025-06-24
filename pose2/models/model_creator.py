@@ -14,6 +14,7 @@ def create_model(model_id):
         print("Selected model based on ResNet50, no frozen conv")
         return BB8Model_3()
     else:
-        return ValueError("No such model exist!")
+        print("Selected the original model based on ResNet18")
+        return BB8Model_1()
 
 
