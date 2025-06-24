@@ -161,18 +161,6 @@ class CombinedDataset(Dataset):
     def load_image(self, img_path):
         """Load an RGB image and convert to tensor."""
         img = Image.open(img_path).convert("RGB")
-        #img = self.rgb_crop_img(img, bbox, padding)
-        #img = img.resize(self.dimensions)
-        
-        #If we want to visialize the img crop
-        #draw = ImageDraw.Draw(img)
-        #font = ImageFont.load_default()
-        #text = img_path
-        #position = (10, 10)
-        #draw.text(position, text, fill=(128, 0, 128), font=font)
-        #plt.imshow(img)
-        #plt.axis("off")
-        #plt.show()
 
         if self.split == "train":
             return self.train_transform(img), img
@@ -182,17 +170,10 @@ class CombinedDataset(Dataset):
     def load_depth(self, depth_path):
         """Load a depth image and convert to tensor."""
         img_depth = Image.open(depth_path)
-        #depth = self.rgb_crop_img(depth, bbox, padding)
-        
-        # If we want to visualize the depth crop
-        #plt.imshow(depth)
-        #plt.axis("off")
-        #plt.show()
 
-        #depth = depth.resize(self.dimensions)
         depth = np.array(img_depth).astype(np.float32)
         depth = torch.from_numpy(depth)
-        #print(depth)
+
         return depth, img_depth
 
     def rgb_crop_img(self, rgb_img, b, m): # b is the bounding box for the image and m is the wanted margin
@@ -249,9 +230,6 @@ class CombinedDataset(Dataset):
         og_folder_id, sample_id = self.samples[idx]
         folder_id = str(og_folder_id).zfill(2) 
 
-        #(sample_id)
-        #print(folder_id)
-
         # Load the correct camera intrinsics and object info for this folder
         camera_intrinsics = self.cam_data[folder_id]
         camera_matrix = np.array(camera_intrinsics['0']['cam_K']).reshape(3, 3)
@@ -266,28 +244,13 @@ class CombinedDataset(Dataset):
         point_cloud = torch.tensor(np.asarray(point_cloud.points), dtype=torch.float32)
         translation, rotation, bbox, obj_id = self.load_6d_pose(folder_id, sample_id)
 
-        # cache_key = f"{folder_id}-{sample_id}"
-        # if cache_key not in self.points2d_cache:
-        #     points_2d = self.get_3d_bbox_projection(obj_id, rotation, translation, camera_matrix)
-        #     points_norm = self.normalize_points(points_2d, bbox)
-        #     self.points2d_cache[cache_key] = points_norm
-        # else:
-        #     points_norm = self.points2d_cache[cache_key]
-
-        #img = self.load_image(img_path)
-        #depth_data = self.load_depth(depth_path, bbox, 0.2)
         depth = depth.unsqueeze(0)
         info = self.objects_info[int(obj_id)]
         diameter = info['diameter']
-        #points_3d, diameter = self.get_3d_bbox_points(obj_id)
 
         return {
             "rgb": img,
             "depth": depth.clone().detach(),
-            #"points_2d": torch.tensor(points_norm),
-            #"points_3d": torch.tensor(points_3d),
-            #"original_img" : original_img,
-            #"original_depth" : original_depth,
             "img_path" : img_path,
             "depth_path" : depth_path,
             "obj_id": torch.tensor(obj_id),
@@ -295,9 +258,6 @@ class CombinedDataset(Dataset):
             "rotation": torch.tensor(rotation),
             "translation": torch.tensor(translation),
             "diameter": torch.tensor(diameter),
-            #"point_cloud": point_cloud,
-            #"camera_intrinsics": camera_intrinsics['0']['cam_K'],
-            #"objects_info": self.objects_info[og_folder_id],
         }
 
 
